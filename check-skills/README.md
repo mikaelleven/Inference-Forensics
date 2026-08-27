@@ -46,6 +46,15 @@ print(result.usage)  # Token-usage objects extracted from the JSONL
 
 For one-off prompts, pass `system_prompt="..."` to `run` instead. `result.events` contains the parsed JSONL objects.
 
+## Run the benchmark
+
+```powershell
+python .\check-skills\benchmark.py
+python .\check-skills\benchmark.py --passes 5 --payload-file .\check-skills\payload.txt
+```
+
+The benchmark runs tests 3–6 from `benchmark_tests.json` plus a custom-system-prompt test. Each run is logged in `runs.jsonl` and saved as an individual JSON artifact. Token usage is calculated as `actual = input + output`, `effective = actual - payload size`, and `billable = actual - cached`; payload size is the payload file size in bytes divided by 3. The default payload is `payload.txt`.
+
 ## Expected outcomes
 
 The expectations in `skill_tests.json` are intentionally the supplied hypotheses. The runner does not alter them to match observed behavior: unexpected skill interpretation is reported as `fail` and preserved in the artifacts.
@@ -54,6 +63,10 @@ The expectations in `skill_tests.json` are intentionally the supplied hypotheses
 
 - `system-prompt.txt` — the custom control-output instruction supplied to Codex as `developer_instructions`.
 - `.agents/skills/dummy-skill/SKILL.md` — the only skill fixture.
-- `skill_tests.json` — the experiment matrix and expected control values.
+- `skill_tests.json` — the complete skill experiment matrix and expected control values.
+- `benchmark_tests.json` — benchmark matrix containing tests 3–6 plus the custom system-prompt test.
+- `payload.txt` — default payload appended to each benchmark prompt.
+- `benchmark-system-prompt.txt` — custom system prompt used by the additional benchmark test.
 - `codex_runner.py` — reusable isolated Codex CLI wrapper. It accepts prompt text or a custom prompt file, supports a custom temporary prompt filename, and exposes parsed JSONL events and usage data through `CodexResult`.
 - `check_skills.py` — the skill-specific test runner.
+- `benchmark.py` — benchmark runner with multi-pass timing and token-usage statistics.
