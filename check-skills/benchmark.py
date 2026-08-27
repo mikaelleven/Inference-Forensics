@@ -83,6 +83,11 @@ def format_duration(value: float) -> str:
     return f"{rounded:.1f}" if rounded < 1000 else str(round(rounded))
 
 
+def format_response(text: str) -> str:
+    single_line = " ".join(text.split())
+    return single_line if len(single_line) <= 80 else single_line[:77] + "..."
+
+
 def terminal_table(rows: list[tuple[str, int, int, str, str, str, str]]) -> str:
     headers = (
         "Name",
@@ -222,6 +227,7 @@ def main() -> int:
                 f"Completed {name}: {'pass' if passed else 'fail'}, time={duration_seconds:.3f}s, tokens(in={usage['input_tokens']}, out={usage['output_tokens']}, actual={usage['actual_tokens']}, cached={usage['cached_tokens']}, effective={format_number(usage['effective_tokens'])}, billable={usage['billable_tokens']})",
                 flush=True,
             )
+            print(f"Response: {format_response(result.assistant_text)}", flush=True)
 
     table_rows: list[tuple[str, int, int, str, str, str, str]] = []
     for test in TESTS:
