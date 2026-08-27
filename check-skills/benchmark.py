@@ -68,42 +68,49 @@ def run_usage(result: CodexResult, payload_size: float) -> dict[str, Any]:
         "output_tokens": output_tokens,
         "cached_tokens": cached_tokens,
         "actual_tokens": actual_tokens,
-        "effective_tokens": actual_tokens - payload_size,
-        "billable_tokens": actual_tokens - cached_tokens,
+        "effective_tokens": round(actual_tokens - payload_size),
+        "billable_tokens": round(actual_tokens - cached_tokens),
         "usage_available": bool(result.usage),
     }
 
 
 def format_number(value: int | float) -> str:
-    if isinstance(value, float) and not value.is_integer():
-        return f"{value:.2f}"
-    return str(int(value))
+    return str(round(value))
 
 
-def terminal_table(rows: list[tuple[str, int, int, str, str]]) -> str:
+def format_duration(value: float) -> str:
+    rounded = round(value, 1)
+    return f"{rounded:.1f}" if rounded < 1000 else str(round(rounded))
+
+
+def terminal_table(rows: list[tuple[str, int, int, str, str, str, str]]) -> str:
     headers = (
         "Name",
-        "Num passed",
-        "Num failed",
-        "Token usage (in, effective, billable)",
+        "Pass",
+        "Fail",
+        "Input",
+        "Effective",
+        "Billable",
         "Time (avg / min / max)",
     )
     values = [
-        (name, str(passed), str(failed), token_usage, timing)
-        for name, passed, failed, token_usage, timing in rows
+        (name, str(passed), str(failed), input_tokens, effective_tokens, billable_tokens, timing)
+        for name, passed, failed, input_tokens, effective_tokens, billable_tokens, timing in rows
     ]
     widths = [
         max(len(headers[index]), *(len(row[index]) for row in values))
         for index in range(len(headers))
     ]
 
-    def format_row(row: tuple[str, str, str, str, str]) -> str:
+    def format_row(row: tuple[str, str, str, str, str, str, str]) -> str:
         cells = [
             row[0].ljust(widths[0]),
             row[1].rjust(widths[1]),
             row[2].rjust(widths[2]),
             row[3].rjust(widths[3]),
             row[4].rjust(widths[4]),
+            row[5].rjust(widths[5]),
+            row[6].rjust(widths[6]),
         ]
         return " | ".join(cells)
 
@@ -163,7 +170,7 @@ def main() -> int:
     wrapper = CodexWrapper(
         executable,
         args.timeout,
-        system_prompt_file=ROOT / "system-prompt.txt",
+        system_prompt_file=ROOT / "benchmark-system-prompt.txt",
         skill_sources=(SKILL_SOURCE,),
     )
     metrics: dict[str, list[dict[str, Any]]] = {str(test["name"]): [] for test in TESTS}
@@ -216,7 +223,7 @@ def main() -> int:
                 flush=True,
             )
 
-    table_rows: list[tuple[str, int, int, str, str]] = []
+    table_rows: list[tuple[str, int, int, str, str, str, str]] = []
     for test in TESTS:
         name = str(test["name"])
         runs = metrics[name]
@@ -226,13 +233,16 @@ def main() -> int:
         effective_tokens = sum(run["effective_tokens"] for run in runs)
         billable_tokens = sum(run["billable_tokens"] for run in runs)
         durations = [run["duration_seconds"] for run in runs]
-        token_usage = (
-            f"{format_number(input_tokens)}, "
-            f"{format_number(effective_tokens)}, "
-            f"{format_number(billable_tokens)}"
+        input_usage = format_number(input_tokens)
+        effective_usage = format_number(effective_tokens)
+        billable_usage = format_number(billable_tokens)
+        timing = (
+            f"{format_duration(sum(durations) / len(durations))}s / "
+            f"{format_duration(min(durations))}s / {format_duration(max(durations))}s"
         )
-        timing = f"{sum(durations) / len(durations):.3f}s / {min(durations):.3f}s / {max(durations):.3f}s"
-        table_rows.append((name, passed_count, failed_count, token_usage, timing))
+        table_rows.append(
+            (name, passed_count, failed_count, input_usage, effective_usage, billable_usage, timing)
+        )
 
     summary = terminal_table(table_rows)
     print("\n" + summary)
