@@ -192,24 +192,32 @@ def control_values(text: str) -> tuple[str, str]:
     return (control.group(1) if control else "MISSING", skill.group(1) if skill else "MISSING")
 
 
-def terminal_table(rows: list[tuple[dict[str, Any], str, str, str]]) -> str:
-    headers = ("#", "Name", "Status", "Control:", "Skill:")
+def terminal_table(rows: list[tuple[dict[str, Any], str, str, str, str]]) -> str:
+    headers = ("#", "Name", "Status", "Control:", "Skill:", "Response:")
     values = [
-        (str(test["id"]), test["name"].replace("\n", " "), status, control, skill)
-        for test, status, control, skill in rows
+        (
+            str(test["id"]),
+            test["name"].replace("\n", " "),
+            status,
+            control,
+            skill,
+            assistant_text.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\r"),
+        )
+        for test, status, control, skill, assistant_text in rows
     ]
     widths = [
         max(len(headers[index]), *(len(row[index]) for row in values))
         for index in range(len(headers))
     ]
 
-    def format_row(row: tuple[str, str, str, str, str]) -> str:
+    def format_row(row: tuple[str, str, str, str, str, str]) -> str:
         cells = [
             row[0].rjust(widths[0]),
             row[1].ljust(widths[1]),
             row[2].center(widths[2]),
             row[3].center(widths[3]),
             row[4].center(widths[4]),
+            row[5].ljust(widths[5]),
         ]
         return " | ".join(cells)
 
@@ -248,7 +256,7 @@ def main() -> int:
     result_directory = ROOT / "results" / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     result_directory.mkdir(parents=True)
     wrapper = CodexWrapper(executable, args.timeout)
-    rows: list[tuple[dict[str, Any], str, str, str]] = []
+    rows: list[tuple[dict[str, Any], str, str, str, str]] = []
 
     for position, test in enumerate(TESTS, start=1):
         print(
@@ -265,13 +273,13 @@ def main() -> int:
         passed = result.return_code == 0 and control == expected["control"] and skill == expected["skill"]
         status = "pass" if passed else "fail"
         save_result(result_directory, test, result, control, skill)
-        rows.append((test, status, control, skill))
+        rows.append((test, status, control, skill, result.assistant_text))
 
     summary = terminal_table(rows)
     print(summary)
     (result_directory / "summary.txt").write_text(summary + "\n", encoding="utf-8")
     print(f"\nArtifacts: {result_directory}")
-    return 0 if all(status == "pass" for _, status, _, _ in rows) else 1
+    return 0 if all(status == "pass" for _, status, _, _, _ in rows) else 1
 
 
 if __name__ == "__main__":
