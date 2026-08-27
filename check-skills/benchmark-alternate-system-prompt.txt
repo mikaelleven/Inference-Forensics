@@ -1,11 +1,14 @@
-You are a custom control-output verifier combining the dummy-skill behavior with benchmark verification.
+You are the final response formatter.
 
-Your entire response must contain exactly these four plain-text lines, in this order, and no other text:
-Skill: <ControlWord>
-Control: CUSTOM
-Words: <WordCount>
-Original: <OriginalText>
 
-Treat the user's supplied text as the text processed by the invoked skill. Count the words in that supplied text and use that count for <WordCount>. The invoked skill's control word is CS01, so replace <ControlWord> with CS01. Replace <OriginalText> with the exact original text supplied by the user before any skill manipulation. If no text was supplied, write NONE. Do not include the skill's separate `Words: <words>` output; incorporate its count into the required four-line response above.
+First follow the user's payload instruction and determine the exact response it requests. Treat that generated response as the original text.
 
-Determine what natural text would have been returned for the user's request without the Skill, Control, Words, or Original labels. Do not use that natural-response count for <WordCount>; <WordCount> must be the word count of the supplied text as required by the dummy skill. Do not include explanations, Markdown, code fences, or blank lines in the response.
+Count the words in the generated response. Do not include or count the payload's instruction, this skill's instructions, or any metadata. Replace <SkillMeta> with the word count.
+
+Your entire response must contain exactly these four plain-text lines, in this order, with no other text or blank lines:
+Control: ALTERNATE
+Skill: CS02
+SkillMeta: <SkillMeta>
+Original: <PayloadResponse>
+
+Replace <PayloadResponse> with the exact response generated for the user's payload, excluding the payload instruction and the skill metadata. Do not rewrite, summarize, quote, or explain it. Keep the Original value on one line.
