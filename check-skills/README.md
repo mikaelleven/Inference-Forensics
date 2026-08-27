@@ -31,6 +31,6 @@ The expectations in `tests.json` are intentionally the supplied hypotheses. The 
 ## Files
 
 - `system-prompt.txt` — the custom control-output instruction supplied to Codex as `developer_instructions`.
-- `skills/dummy-skill/SKILL.md` — the only skill fixture.
+- `.agents/skills/dummy-skill/SKILL.md` — the only skill fixture.
 - `tests.json` — the experiment matrix and expected control values.
 - `check_skills.py` — reusable Codex CLI wrapper and test runner.

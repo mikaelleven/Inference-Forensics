@@ -19,7 +19,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent
 SYSTEM_PROMPT = (ROOT / "system-prompt.txt").read_text(encoding="utf-8").strip()
 TESTS = json.loads((ROOT / "tests.json").read_text(encoding="utf-8"))
-SKILL_SOURCE = ROOT / "skills" / "dummy-skill"
+SKILL_SOURCE = ROOT.parent / ".agents" / "skills" / "dummy-skill"
 
 
 @dataclass
