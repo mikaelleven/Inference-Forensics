@@ -48,7 +48,7 @@ class CodexWrapper:
             codex_home.mkdir()
             workdir.mkdir()
             self._copy_authentication(codex_home)
-            self._write_config(codex_home)
+            instructions_file = self._write_instructions_file(temp_root)
 
             if load_skills:
                 destination = codex_home / "skills" / "dummy-skill"
@@ -57,15 +57,39 @@ class CodexWrapper:
 
             environment = os.environ.copy()
             environment["CODEX_HOME"] = str(codex_home)
+            executable_directory = str(Path(self.codex_path).parent)
+            if executable_directory not in ("", "."):
+                environment["PATH"] = executable_directory + os.pathsep + environment.get("PATH", "")
+            # Keep this invocation aligned with the PowerShell harness. In
+            # particular, skills are disabled unless this test explicitly
+            # requests them with --load-skills.
+            include_skills = str(load_skills).lower()
             command = [
                 self.codex_path,
                 "exec",
+                "--ignore-user-config",
+                "-m",
+                "gpt-5.6-luna",
+                "-c",
+                "model_reasoning_effort='none'",
+                "-c",
+                f"model_instructions_file='{instructions_file.as_posix()}'",
+                "-c",
+                "developer_instructions=''",
+                "-c",
+                "include_permissions_instructions=false",
+                "-c",
+                "include_apps_instructions=false",
+                "-c",
+                "include_collaboration_mode_instructions=false",
+                "-c",
+                "include_environment_context=false",
+                "-c",
+                f"skills.include_instructions={include_skills}",
                 "--json",
                 "--ephemeral",
                 "--sandbox",
                 "read-only",
-                "--ask-for-approval",
-                "never",
                 "--skip-git-repo-check",
                 prompt,
             ]
@@ -97,11 +121,10 @@ class CodexWrapper:
             )
 
     @staticmethod
-    def _write_config(codex_home: Path) -> None:
-        escaped_prompt = SYSTEM_PROMPT.replace('"""', '\\\"\\\"\\\"')
-        (codex_home / "config.toml").write_text(
-            f'developer_instructions = """{escaped_prompt}"""\n', encoding="utf-8"
-        )
+    def _write_instructions_file(temp_root: Path) -> Path:
+        instructions_file = (temp_root / "system-prompt.txt").resolve()
+        instructions_file.write_text(SYSTEM_PROMPT + "\n", encoding="utf-8")
+        return instructions_file
 
     @staticmethod
     def _copy_authentication(codex_home: Path) -> None:
@@ -169,8 +192,29 @@ def control_values(text: str) -> tuple[str, str]:
     return (control.group(1) if control else "MISSING", skill.group(1) if skill else "MISSING")
 
 
-def markdown_cell(value: str) -> str:
-    return value.replace("|", "\\|").replace("\n", "<br>")
+def terminal_table(rows: list[tuple[dict[str, Any], str, str, str]]) -> str:
+    headers = ("#", "Name", "Status", "Control:", "Skill:")
+    values = [
+        (str(test["id"]), test["name"].replace("\n", " "), status, control, skill)
+        for test, status, control, skill in rows
+    ]
+    widths = [
+        max(len(headers[index]), *(len(row[index]) for row in values))
+        for index in range(len(headers))
+    ]
+
+    def format_row(row: tuple[str, str, str, str, str]) -> str:
+        cells = [
+            row[0].rjust(widths[0]),
+            row[1].ljust(widths[1]),
+            row[2].center(widths[2]),
+            row[3].center(widths[3]),
+            row[4].center(widths[4]),
+        ]
+        return " | ".join(cells)
+
+    separator = "-+-".join("-" * width for width in widths)
+    return "\n".join((format_row(headers), separator, *(format_row(row) for row in values)))
 
 
 def save_result(directory: Path, test: dict[str, Any], result: CodexResult, control: str, skill: str) -> None:
@@ -206,8 +250,16 @@ def main() -> int:
     wrapper = CodexWrapper(executable, args.timeout)
     rows: list[tuple[dict[str, Any], str, str, str]] = []
 
-    for test in TESTS:
+    for position, test in enumerate(TESTS, start=1):
+        print(
+            f"Starting Codex request {position}/{len(TESTS)}: {test['name']}",
+            flush=True,
+        )
         result = wrapper.run(test["prompt"], load_skills=test["mode"] == "--load-skills")
+        print(
+            f"Received Codex response for test {test['id']} (exit code {result.return_code}).",
+            flush=True,
+        )
         control, skill = control_values(result.assistant_text)
         expected = test["expected"]
         passed = result.return_code == 0 and control == expected["control"] and skill == expected["skill"]
@@ -215,18 +267,9 @@ def main() -> int:
         save_result(result_directory, test, result, control, skill)
         rows.append((test, status, control, skill))
 
-    lines = [
-        "| # | Name | Status | Control: | Skill: |",
-        "| -: | --- | --- | --- | --- |",
-    ]
-    for test, status, control, skill in rows:
-        lines.append(
-            f"| {test['id']} | {markdown_cell(test['name'])} | {status} | "
-            f"{markdown_cell(control)} | {markdown_cell(skill)} |"
-        )
-    summary = "\n".join(lines)
+    summary = terminal_table(rows)
     print(summary)
-    (result_directory / "summary.md").write_text(summary + "\n", encoding="utf-8")
+    (result_directory / "summary.txt").write_text(summary + "\n", encoding="utf-8")
     print(f"\nArtifacts: {result_directory}")
     return 0 if all(status == "pass" for _, status, _, _ in rows) else 1
 
