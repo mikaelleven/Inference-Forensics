@@ -22,7 +22,7 @@ python .\check-skills\check_skills.py --codex-path C:\Tools\codex.cmd
 
 The runner executes every case in its own temporary `CODEX_HOME`, always passes `--json`, and uses an ephemeral, read-only, non-interactive Codex session. The `--no-skills` cases receive an empty `CODEX_HOME`; the `--load-skills` cases receive only the included `dummy-skill` fixture.
 
-A timestamped directory under `check-skills/results/` contains the raw JSONL stream, parsed assistant response, extracted usage objects, and `summary.md`. These artifacts support both behavioral review and token-usage comparison.
+A timestamped directory under `check-skills/results/` contains the raw JSONL stream, parsed assistant response, extracted usage objects, and `summary.txt`. These artifacts support both behavioral review and token-usage comparison.
 
 ## Expected outcomes
 
