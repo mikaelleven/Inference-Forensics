@@ -181,12 +181,9 @@ def main() -> int:
     metrics: dict[str, list[dict[str, Any]]] = {str(test["name"]): [] for test in TESTS}
 
     for pass_number in range(1, args.passes + 1):
+        print(f"Starting pass {pass_number}/{args.passes}\n", flush=True)
         for position, test in enumerate(TESTS, start=1):
             name = str(test["name"])
-            print(
-                f"Starting pass {pass_number}/{args.passes}, test {position}/{len(TESTS)}: {name}",
-                flush=True,
-            )
             prompt = build_prompt(test, payload)
             run_options: dict[str, Any] = {}
             if test.get("system_prompt_file"):
@@ -224,10 +221,16 @@ def main() -> int:
                 log_file.write(json.dumps(record, ensure_ascii=False) + "\n")
             save_run_artifact(result_directory, test, record, result)
             print(
-                f"Completed {name}: {'pass' if passed else 'fail'}, time={duration_seconds:.3f}s, tokens(in={usage['input_tokens']}, out={usage['output_tokens']}, actual={usage['actual_tokens']}, cached={usage['cached_tokens']}, effective={format_number(usage['effective_tokens'])}, billable={usage['billable_tokens']})",
+                f"{position}/{len(TESTS)}: {name}: "
+                f"{'pass' if passed else 'fail'}, "
+                f"time={duration_seconds:.3f}s, "
+                f"tokens(in={usage['input_tokens']}, out={usage['output_tokens']}, "
+                f"actual={usage['actual_tokens']}, cached={usage['cached_tokens']}, "
+                f"effective={format_number(usage['effective_tokens'])}, "
+                f"billable={usage['billable_tokens']})\n"
+                f"{format_response(result.assistant_text)}\n",
                 flush=True,
             )
-            print(f"Response: {format_response(result.assistant_text)}", flush=True)
 
     table_rows: list[tuple[str, int, int, str, str, str, str]] = []
     for test in TESTS:
