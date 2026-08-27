@@ -1,0 +1,44 @@
+[
+  {
+    "id": 1,
+    "name": "Dollar invocation without skills",
+    "mode": "--no-skills",
+    "prompt": "$dummy-skill Say Hi",
+    "expected": { "control": "DEFAULT", "skill": "CS01" }
+  },
+  {
+    "id": 2,
+    "name": "Slash-dollar invocation without skills",
+    "mode": "--no-skills",
+    "prompt": "/$dummy-skill Say Hi",
+    "expected": { "control": "DEFAULT", "skill": "CS01" }
+  },
+  {
+    "id": 3,
+    "name": "Plain invocation without skills",
+    "mode": "--no-skills",
+    "prompt": "dummy-skill Say Hi",
+    "expected": { "control": "DEFAULT", "skill": "CS01" }
+  },
+  {
+    "id": 4,
+    "name": "Dollar invocation with skills",
+    "mode": "--load-skills",
+    "prompt": "$dummy-skill Say Hi",
+    "expected": { "control": "DEFAULT", "skill": "CS01" }
+  },
+  {
+    "id": 5,
+    "name": "Slash-dollar invocation with skills",
+    "mode": "--load-skills",
+    "prompt": "/$dummy-skill Say Hi",
+    "expected": { "control": "DEFAULT", "skill": "CS01" }
+  },
+  {
+    "id": 6,
+    "name": "Plain invocation with skills",
+    "mode": "--load-skills",
+    "prompt": "dummy-skill Say Hi",
+    "expected": { "control": "DEFAULT", "skill": "NONE" }
+  }
+]
