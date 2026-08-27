@@ -1,42 +1,42 @@
 [
   {
     "id": 1,
-    "name": "Dollar invocation without skills",
+    "name": "Explicit no skills 1",
     "mode": "--no-skills",
     "prompt": "$dummy-skill Say Hi",
     "expected": { "control": "DEFAULT", "skill": "CS01" }
   },
   {
     "id": 2,
-    "name": "Slash-dollar invocation without skills",
+    "name": "Explicit no skills 2",
     "mode": "--no-skills",
     "prompt": "/$dummy-skill Say Hi",
     "expected": { "control": "DEFAULT", "skill": "CS01" }
   },
   {
     "id": 3,
-    "name": "Plain invocation without skills",
+    "name": "Implicit no skills",
     "mode": "--no-skills",
     "prompt": "dummy-skill Say Hi",
-    "expected": { "control": "DEFAULT", "skill": "CS01" }
+    "expected": { "control": "DEFAULT", "skill": "NONE" }
   },
   {
     "id": 4,
-    "name": "Dollar invocation with skills",
+    "name": "Explicit with skills 1",
     "mode": "--load-skills",
     "prompt": "$dummy-skill Say Hi",
     "expected": { "control": "DEFAULT", "skill": "CS01" }
   },
   {
     "id": 5,
-    "name": "Slash-dollar invocation with skills",
+    "name": "Explicit with skills 2",
     "mode": "--load-skills",
     "prompt": "/$dummy-skill Say Hi",
     "expected": { "control": "DEFAULT", "skill": "CS01" }
   },
   {
     "id": 6,
-    "name": "Plain invocation with skills",
+    "name": "Implicit with skills",
     "mode": "--load-skills",
     "prompt": "dummy-skill Say Hi",
     "expected": { "control": "DEFAULT", "skill": "NONE" }
