@@ -47,7 +47,7 @@ def build_prompt(test: dict[str, Any], payload: str) -> str:
     payload = payload.rstrip()
     if not payload:
         return prompt
-    return f"{prompt}\n\n{payload}"
+    return f"{prompt} {payload}"
 
 
 def usage_total(usages: list[dict[str, Any]], key: str) -> int:

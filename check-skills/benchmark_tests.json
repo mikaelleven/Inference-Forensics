@@ -3,37 +3,36 @@
     "id": 3,
     "name": "Implicit no skills",
     "mode": "--no-skills",
-    "prompt": "dummy-skill Say Hi",
-    "expected": { "control": "DEFAULT", "skill": "NONE" }
+    "prompt": "dummy-skill",
+    "expected": { "control": "CUSTOM", "skill": "NONE" }
   },
   {
     "id": 4,
     "name": "Explicit with skills 1",
     "mode": "--load-skills",
-    "prompt": "$dummy-skill Say Hi",
-    "expected": { "control": "DEFAULT", "skill": "CS01" }
+    "prompt": "$dummy-skill",
+    "expected": { "control": "CUSTOM", "skill": "CS01" }
   },
   {
     "id": 5,
     "name": "Explicit with skills 2",
     "mode": "--load-skills",
-    "prompt": "/$dummy-skill Say Hi",
-    "expected": { "control": "DEFAULT", "skill": "CS01" }
+    "prompt": "/$dummy-skill",
+    "expected": { "control": "CUSTOM", "skill": "CS01" }
   },
   {
     "id": 6,
     "name": "Implicit with skills",
     "mode": "--load-skills",
-    "prompt": "dummy-skill Say Hi",
-    "expected": { "control": "DEFAULT", "skill": "NONE" }
+    "prompt": "dum2my-sk2ill",
+    "expected": { "control": "CUSTOM", "skill": "NONE" }
   },
   {
     "id": 7,
     "name": "Custom system prompt",
     "mode": "--no-skills",
-    "prompt": "dummy-skill Say Hi",
-    "system_prompt_file": "benchmark-system-prompt.txt",
-    "system_prompt_filename": "custom-system-prompt.txt",
-    "expected": { "control": "CUSTOM", "skill": "NONE" }
+    "prompt": "dummy-skill",
+    "system_prompt_file": "benchmark-alternate-system-prompt.txt",
+    "expected": { "control": "ALTERNATE", "skill": "CS02" }
   }
 ]
