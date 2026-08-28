@@ -1,45 +1,69 @@
 [
   {
+    "id": 2,
+    "name": "Explicit (no skills)",
+    "mode": "--no-skills",
+    "prompt": "/$dummy-skill",
+    "match": "SkillMeta: 10",
+    "expected": { "control": "CUSTOM", "skill": "NONE" }
+  },
+  {
     "id": 3,
-    "name": "Implicit no skills",
+    "name": "Implicit (no skills)",
     "mode": "--no-skills",
     "prompt": "dummy-skill",
+    "match": "SkillMeta: 10",
     "expected": { "control": "CUSTOM", "skill": "NONE" }
   },
   {
     "id": 4,
-    "name": "Explicit with skills 1",
+    "name": "Explicit 1 (skills loaded)",
     "mode": "--load-skills",
     "prompt": "$dummy-skill",
+    "match": "SkillMeta: 10",
     "expected": { "control": "CUSTOM", "skill": "CS01" }
   },
   {
     "id": 5,
-    "name": "Explicit with skills 2",
+    "name": "Explicit 2 (skills loaded)",
     "mode": "--load-skills",
     "prompt": "/$dummy-skill",
+    "match": "SkillMeta: 10",
     "expected": { "control": "CUSTOM", "skill": "CS01" }
   },
   {
     "id": 6,
-    "name": "Implicit with skills",
+    "name": "Implicit (skills loaded)",
     "mode": "--load-skills",
     "prompt": "dummy-skill",
+    "match": "SkillMeta: 10",
     "expected": { "control": "CUSTOM", "skill": "CS01" }
   },
   {
     "id": 1,
     "name": "No match (skills loaded)",
     "mode": "--load-skills",
-    "prompt": "dum2my-sk2ill",
+    "prompt": "n1o-sk2ill",
+    "match": "SkillMeta: 10",
     "expected": { "control": "CUSTOM", "skill": "NONE" }
   },
   {
     "id": 7,
-    "name": "Custom system prompt",
+    "name": "System prompt (no skills)",
     "mode": "--no-skills",
     "prompt": "",
     "system_prompt_file": "benchmark-alternate-system-prompt.txt",
+    "match": "SkillMeta: 10",
+    "expected": { "control": "ALTERNATE", "skill": "CS02" }
+  },
+  {
+    "id": 8,
+    "name": "System prompt (skills)",
+    "mode": "--load-skills",
+    "prompt": "",
+    "system_prompt_file": "benchmark-alternate-system-prompt.txt",
+    "match": "SkillMeta: 10",
     "expected": { "control": "ALTERNATE", "skill": "CS02" }
   }
+
 ]
