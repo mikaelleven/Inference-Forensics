@@ -2,6 +2,31 @@
 
 `check_skills.py` is an isolated, repeatable Codex CLI experiment for observing how prompt spellings and skill loading affect skill invocation and token usage. The reusable Codex invocation code lives in `codex_runner.py` so other test scripts can use the same isolated setup.
 
+## Purpose and goals
+
+These tests investigate how Codex CLI interprets skill references under controlled conditions. They compare explicit and implicit skill names, the presence or absence of loaded skills, and an equivalent custom system prompt.
+
+The goals are to:
+
+- establish evidence for when a skill is invoked, rather than assuming that a prompt spelling guarantees it;
+- measure the context and billable-token cost of loading skills compared with placing equivalent instructions in a custom system prompt;
+- check whether context size materially affects execution time; and
+- provide isolated, reviewable artifacts that can support future experiments with harness configuration and agent behaviour.
+
+## Test cases and expected outcomes
+
+A **match** means that the `dummy-skill` completed its intended task. **Pass** and **fail** describe whether the test produced its expected outcome, regardless of whether there was a skill match.
+
+| Test | Invocation and setup | Expected outcome |
+| --- | --- | --- |
+| Explicit (no skills) | `/$<skill-name>`; no skills loaded | No match, because no skills are loaded. |
+| Implicit (no skills) | `<skill-name>`; no skills loaded | No match, because no skills are loaded. |
+| Explicit 1 (skills loaded) | `/$<skill-name>`; skills loaded | Match, because the skill is loaded. |
+| Explicit 2 (skills loaded) | `$<skill-name>`; skills loaded | Match, because the skill is loaded. |
+| Implicit (skills loaded) | `<skill-name>`; skills loaded | A match may occur, because the skill is loaded. |
+| No match (skills loaded) | `<random-name>`; skills loaded | No match, despite skills being loaded, because the referenced name is misspelled as `n1o-sk2ill`. |
+| Custom system prompt | Custom system prompt; no skills loaded | Match, because the custom system prompt includes instructions equivalent to the skill. |
+
 ## Prerequisites
 
 - Python 3.10 or later
@@ -54,6 +79,31 @@ python .\check-skills\benchmark.py --passes 5 --payload-file .\check-skills\payl
 ```
 
 The benchmark runs tests 3–6 from `benchmark_tests.json` plus a custom-system-prompt test. Each run is logged in `runs.jsonl` and saved as an individual JSON artifact. Token usage is calculated as `actual = input + output`, `effective = actual - payload size`, and `billable = actual - cached`; payload size is the payload file size in bytes divided by 3. The default payload is `payload.txt`.
+
+## Observed results
+
+The following is an observed benchmark snapshot, not a universal guarantee. Each row represents one run; therefore its average, minimum, and maximum time are identical. The payload size was approximately 39 tokens per run.
+
+| Name | Match | Pass | Fail | Input | Effective | Billable | Time (avg / min / max) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Explicit (no skills) | – | 1 | 0 | 4,078 | 4,063 | 4,102 | 6.8s / 6.8s / 6.8s |
+| Implicit (no skills) | – | 1 | 0 | 4,077 | 4,062 | 1,285 | 8.1s / 8.1s / 8.1s |
+| Explicit 1 (skills loaded) | x | 1 | 0 | 5,024 | 5,016 | 1,215 | 9.7s / 9.7s / 9.7s |
+| Explicit 2 (skills loaded) | x | 0 | 1 | 5,017 | 5,010 | 5,049 | 7.1s / 7.1s / 7.1s |
+| Implicit (skills loaded) | x | 1 | 0 | 4,836 | 4,828 | 4,867 | 6.5s / 6.5s / 6.5s |
+| No match (skills loaded) | – | 1 | 0 | 4,845 | 4,830 | 4,869 | 6.7s / 6.7s / 6.7s |
+| Custom system prompt | x | 1 | 0 | 4,058 | 4,052 | 1,275 | 9.3s / 9.3s / 9.3s |
+
+### Conclusions from the current observations
+
+- Even with a short, strict system prompt, outputs can vary between runs. These tests cannot always be made 100% reproducible.
+- A relatively narrow profile can be created in about 4,000 input tokens.
+- Within this small sample, execution time does not appear to be materially affected by context size.
+- Disabling skills and then referring to `/$<skill-name>` does not force Codex CLI to read a particular skill.
+- With skills loaded, explicit references generally work with both `/$<skill-name>` and `$<skill-name>`. Naming the skill directly as `<skill-name>` also often works. The failed `Explicit 2` row demonstrates that this behaviour is not perfectly deterministic.
+- The most stable and reproducible results observed so far come from a tailored system prompt with skills disabled. This approach also produced the lowest token usage in the observed comparisons, with savings of up to about 20%.
+
+These are empirical observations from the current setup and model state. Repeat the benchmark with multiple passes before treating them as broadly generalisable.
 
 ## Expected outcomes
 
