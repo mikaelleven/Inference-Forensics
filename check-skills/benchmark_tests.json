@@ -29,7 +29,7 @@
   },
   {
     "id": 1,
-    "name": "No match",
+    "name": "No match (skills loaded)",
     "mode": "--load-skills",
     "prompt": "dum2my-sk2ill",
     "expected": { "control": "CUSTOM", "skill": "NONE" }
@@ -38,7 +38,7 @@
     "id": 7,
     "name": "Custom system prompt",
     "mode": "--no-skills",
-    "prompt": "dummy-skill",
+    "prompt": "",
     "system_prompt_file": "benchmark-alternate-system-prompt.txt",
     "expected": { "control": "ALTERNATE", "skill": "CS02" }
   }
