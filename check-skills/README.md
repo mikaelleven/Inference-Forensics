@@ -25,7 +25,8 @@ A **match** means that the `dummy-skill` completed its intended task. **Pass** a
 | Explicit 2 (skills loaded) | `$<skill-name>`; skills loaded | Match, because the skill is loaded. |
 | Implicit (skills loaded) | `<skill-name>`; skills loaded | A match may occur, because the skill is loaded. |
 | No match (skills loaded) | `<random-name>`; skills loaded | No match, despite skills being loaded, because the referenced name is misspelled as `n1o-sk2ill`. |
-| Custom system prompt | Custom system prompt; no skills loaded | Match, because the custom system prompt includes instructions equivalent to the skill. |
+| System prompt (no skills) | Custom system prompt; no skills loaded | Match, because the custom system prompt includes instructions equivalent to the skill. |
+| System prompt (skills) | The same custom system prompt; skills loaded | Match, because the custom system prompt includes instructions equivalent to the skill. |
 
 ## Prerequisites
 
@@ -78,30 +79,32 @@ python .\check-skills\benchmark.py
 python .\check-skills\benchmark.py --passes 5 --payload-file .\check-skills\payload.txt
 ```
 
-The benchmark runs tests 3–6 from `benchmark_tests.json` plus a custom-system-prompt test. Each run is logged in `runs.jsonl` and saved as an individual JSON artifact. Token usage is calculated as `actual = input + output`, `effective = actual - payload size`, and `billable = actual - cached`; payload size is the payload file size in bytes divided by 3. The default payload is `payload.txt`.
+The benchmark runs tests 3–6 from `benchmark_tests.json` plus the custom-system-prompt cases with and without skills loaded. Each run is logged in `runs.jsonl` and saved as an individual JSON artifact. Token usage is calculated as `actual = input + output`, `effective = actual - payload size`, and `billable = actual - cached`; payload size is the payload file size in bytes divided by 3. The default payload is `payload.txt`.
 
 ## Observed results
 
-The following is an observed benchmark snapshot, not a universal guarantee. Each row represents one run; therefore its average, minimum, and maximum time are identical. The payload size was approximately 39 tokens per run.
+The following is an observed benchmark snapshot, not a universal guarantee. The results aggregate three passes per test. The payload size was approximately 39 tokens per run. An `x` denotes a match in every pass; `*` denotes mixed match results across passes.
 
 | Name | Match | Pass | Fail | Input | Effective | Billable | Time (avg / min / max) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Explicit (no skills) | – | 1 | 0 | 4,078 | 4,063 | 4,102 | 6.8s / 6.8s / 6.8s |
-| Implicit (no skills) | – | 1 | 0 | 4,077 | 4,062 | 1,285 | 8.1s / 8.1s / 8.1s |
-| Explicit 1 (skills loaded) | x | 1 | 0 | 5,024 | 5,016 | 1,215 | 9.7s / 9.7s / 9.7s |
-| Explicit 2 (skills loaded) | x | 0 | 1 | 5,017 | 5,010 | 5,049 | 7.1s / 7.1s / 7.1s |
-| Implicit (skills loaded) | x | 1 | 0 | 4,836 | 4,828 | 4,867 | 6.5s / 6.5s / 6.5s |
-| No match (skills loaded) | – | 1 | 0 | 4,845 | 4,830 | 4,869 | 6.7s / 6.7s / 6.7s |
-| Custom system prompt | x | 1 | 0 | 4,058 | 4,052 | 1,275 | 9.3s / 9.3s / 9.3s |
+| Explicit (no skills) | – | 3 | 0 | 12,234 | 12,189 | 4,626 | 7.1s / 6.2s / 8.3s |
+| Implicit (no skills) | – | 3 | 0 | 12,231 | 12,186 | 783 | 8.6s / 7.7s / 9.9s |
+| Explicit 1 (skills loaded) | x | 3 | 0 | 15,079 | 15,055 | 7,492 | 9.3s / 7.6s / 11.4s |
+| Explicit 2 (skills loaded) | x | 2 | 1 | 15,065 | 15,041 | 4,662 | 8.1s / 7.8s / 8.5s |
+| Implicit (skills loaded) | * | 2 | 1 | 14,520 | 14,490 | 3,087 | 7.7s / 6.9s / 8.1s |
+| No match (skills loaded) | – | 2 | 1 | 58,757 | 58,881 | 26,742 | 10.0s / 6.6s / 16.1s |
+| System prompt (no skills) | x | 3 | 0 | 12,174 | 12,156 | 3,825 | 7.0s / 6.8s / 7.3s |
+| System prompt (skills) | x | 3 | 0 | 14,463 | 14,445 | 5,090 | 7.5s / 6.5s / 9.2s |
 
 ### Conclusions from the current observations
 
 - Even with a short, strict system prompt, outputs can vary between runs. These tests cannot always be made 100% reproducible.
-- A relatively narrow profile can be created in about 4,000 input tokens.
+- A relatively narrow profile can be created in about 4,000 input tokens per pass.
 - Within this small sample, execution time does not appear to be materially affected by context size.
 - Disabling skills and then referring to `/$<skill-name>` does not force Codex CLI to read a particular skill.
 - With skills loaded, explicit references generally work with both `/$<skill-name>` and `$<skill-name>`. Naming the skill directly as `<skill-name>` also often works. The failed `Explicit 2` row demonstrates that this behaviour is not perfectly deterministic.
-- The most stable and reproducible results observed so far come from a tailored system prompt with skills disabled. This approach also produced the lowest token usage in the observed comparisons, with savings of up to about 20%.
+- `Implicit (skills loaded)` produced mixed match results across its three passes, further demonstrating the difficulty of obtaining fully reproducible results from implicit skill references.
+- The tailored system prompt with skills disabled remains the most stable and token-efficient observed configuration. Loading skills with the same system prompt increased effective token usage from 12,156 to 14,445—about 19%, or approximately 20%. This is consistent with the roughly 20% token overhead observed for comparable skill-loaded cases.
 
 These are empirical observations from the current setup and model state. Repeat the benchmark with multiple passes before treating them as broadly generalisable.
 
@@ -114,7 +117,7 @@ The expectations in `skill_tests.json` are intentionally the supplied hypotheses
 - `benchmark-system-prompt.txt` — the model-instructions file supplied through `model_instructions_file`; `developer_instructions` remains empty.
 - `.agents/skills/dummy-skill/SKILL.md` — the only skill fixture.
 - `skill_tests.json` — the complete skill experiment matrix and expected control values.
-- `benchmark_tests.json` — benchmark matrix containing tests 3–6 plus the custom system-prompt test.
+- `benchmark_tests.json` — benchmark matrix containing tests 3–6 plus the custom-system-prompt cases with and without skills loaded.
 - `payload.txt` — default payload appended to each benchmark prompt.
 - `benchmark-alternate-system-prompt.txt` — alternate model-instructions file used by the additional benchmark test.
 - `lean.config.toml` — minimal benchmark profile with project instructions, web search, MCP/apps/plugins, subagents, and optional context blocks disabled; skill instructions remain enabled for the selective skill cases.
