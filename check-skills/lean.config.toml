@@ -1,0 +1,27 @@
+# Minimal Codex profile for the text benchmark.
+# model_instructions_file is overridden per run with the temporary file that
+# corresponds to the selected system-prompt fixture.
+model = "gpt-5.6-luna"
+model_reasoning_effort = "none"
+model_verbosity = "low"
+model_instructions_file = "benchmark-system-prompt.txt"
+developer_instructions = ""
+web_search = "disabled"
+
+include_permissions_instructions = false
+include_apps_instructions = false
+include_collaboration_mode_instructions = false
+include_skill_instructions = true
+include_environment_context = false
+project_doc_max_bytes = 0
+
+[features]
+apps = false
+multi_agent = false
+memories = false
+plugins = false
+remote_plugin = false
+shell_tool = false
+
+[skills]
+include_instructions = true

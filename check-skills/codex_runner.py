@@ -45,7 +45,9 @@ class CodexWrapper:
 
     Each path in ``skill_sources`` must point to one skill directory. Those
     directories are copied into the temporary ``CODEX_HOME`` only when
-    ``load_skills`` is true.
+    ``load_skills`` is true. A profile config can be supplied with
+    ``profile_config_file``; it is copied as ``<name>.config.toml`` and loaded
+    with ``--profile <name>`` for each isolated process.
     """
 
     def __init__(
@@ -53,10 +55,13 @@ class CodexWrapper:
         codex_path: str,
         timeout_seconds: int,
         *,
+        model: str = "gpt-5.6-luna",
+        reasoning_effort: str = "none",
         system_prompt: str | None = None,
         system_prompt_file: PathLike | None = None,
         system_prompt_filename: str = "system-prompt.txt",
         skill_sources: Iterable[PathLike] = (),
+        profile_config_file: PathLike | None = None,
     ) -> None:
         if system_prompt is not None and system_prompt_file is not None:
             raise ValueError("Pass either system_prompt or system_prompt_file, not both.")
@@ -67,10 +72,17 @@ class CodexWrapper:
 
         self.codex_path = codex_path
         self.timeout_seconds = timeout_seconds
+        self.model = model
+        self.reasoning_effort = reasoning_effort
         self.system_prompt = system_prompt
         self.system_prompt_file = Path(system_prompt_file) if system_prompt_file else None
         self.system_prompt_filename = filename
         self.skill_sources = tuple(Path(source) for source in skill_sources)
+        self.profile_config_file = Path(profile_config_file) if profile_config_file else None
+        if self.profile_config_file is not None and not self.profile_config_file.name.endswith(
+            ".config.toml"
+        ):
+            raise ValueError("profile_config_file must use the <name>.config.toml format.")
 
     def run(
         self,
@@ -112,6 +124,7 @@ class CodexWrapper:
             codex_home.mkdir()
             workdir.mkdir()
             self._copy_authentication(codex_home)
+            profile_name = self._copy_profile(codex_home)
             instructions_file = self._write_instructions_file(
                 temp_root,
                 prompt_text=prompt_text,
@@ -133,14 +146,22 @@ class CodexWrapper:
                 self.codex_path,
                 "exec",
                 "--ignore-user-config",
+            ]
+            if profile_name is not None:
+                command.extend(("--profile", profile_name))
+            command.extend([
                 "-m",
-                "gpt-5.6-luna",
+                self.model,
                 "-c",
-                "model_reasoning_effort='none'",
+                f"model_reasoning_effort='{self.reasoning_effort}'",
                 "-c",
                 f"model_instructions_file='{instructions_file.as_posix()}'",
                 "-c",
                 "developer_instructions=''",
+                "-c",
+                "web_search='disabled'",
+                "-c",
+                "project_doc_max_bytes=0",
                 "-c",
                 "include_permissions_instructions=false",
                 "-c",
@@ -157,7 +178,7 @@ class CodexWrapper:
                 "read-only",
                 "--skip-git-repo-check",
                 prompt,
-            ]
+            ])
             try:
                 completed = subprocess.run(
                     command,
@@ -185,6 +206,15 @@ class CodexWrapper:
                 events=events,
                 usage=extract_usage(events),
             )
+
+    def _copy_profile(self, codex_home: Path) -> str | None:
+        if self.profile_config_file is None:
+            return None
+        if not self.profile_config_file.is_file():
+            raise FileNotFoundError(f"Profile config was not found: {self.profile_config_file}")
+        profile_filename = self.profile_config_file.name
+        shutil.copy2(self.profile_config_file, codex_home / profile_filename)
+        return profile_filename.removesuffix(".config.toml")
 
     def _copy_skills(self, codex_home: Path) -> None:
         skills_directory = codex_home / "skills"

@@ -20,7 +20,7 @@ Use `--codex-path` when the executable is not named `codex`:
 python .\check-skills\check_skills.py --codex-path C:\Tools\codex.cmd
 ```
 
-The runner executes every case in its own temporary `CODEX_HOME`, always passes `--json`, and uses an ephemeral, read-only, non-interactive Codex session. The `--no-skills` cases receive an empty `CODEX_HOME`; the `--load-skills` cases receive only the included `dummy-skill` fixture.
+The runner executes every case in its own temporary `CODEX_HOME`, always passes `--json`, and uses a new `codex exec --ephemeral` read-only, non-interactive process. The benchmark also loads `lean.config.toml` as the `lean` profile while ignoring the normal user config. The `--no-skills` cases receive an empty `CODEX_HOME`; the `--load-skills` cases receive only the included `dummy-skill` fixture.
 
 A timestamped directory under `check-skills/results/` contains the raw JSONL stream, parsed assistant response, extracted usage objects, and `summary.txt`. These artifacts support both behavioral review and token-usage comparison.
 
@@ -61,12 +61,13 @@ The expectations in `skill_tests.json` are intentionally the supplied hypotheses
 
 ## Files
 
-- `system-prompt.txt` — the custom control-output instruction supplied to Codex as `developer_instructions`.
+- `benchmark-system-prompt.txt` — the model-instructions file supplied through `model_instructions_file`; `developer_instructions` remains empty.
 - `.agents/skills/dummy-skill/SKILL.md` — the only skill fixture.
 - `skill_tests.json` — the complete skill experiment matrix and expected control values.
 - `benchmark_tests.json` — benchmark matrix containing tests 3–6 plus the custom system-prompt test.
 - `payload.txt` — default payload appended to each benchmark prompt.
-- `benchmark-system-prompt.txt` — custom system prompt used by the additional benchmark test.
+- `benchmark-alternate-system-prompt.txt` — alternate model-instructions file used by the additional benchmark test.
+- `lean.config.toml` — minimal benchmark profile with project instructions, web search, MCP/apps/plugins, subagents, and optional context blocks disabled; skill instructions remain enabled for the selective skill cases.
 - `codex_runner.py` — reusable isolated Codex CLI wrapper. It accepts prompt text or a custom prompt file, supports a custom temporary prompt filename, and exposes parsed JSONL events and usage data through `CodexResult`.
 - `check_skills.py` — the skill-specific test runner.
 - `benchmark.py` — benchmark runner with multi-pass timing and token-usage statistics.

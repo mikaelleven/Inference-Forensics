@@ -22,6 +22,9 @@ except ImportError:
 ROOT = Path(__file__).resolve().parent
 TESTS = json.loads((ROOT / "benchmark_tests.json").read_text(encoding="utf-8"))
 SKILL_SOURCE = ROOT.parent / ".agents" / "skills" / "dummy-skill"
+LEAN_PROFILE = ROOT / "lean.config.toml"
+MODEL = "gpt-5.6-luna"
+THINKING_LEVEL = "none"
 
 
 def positive_int(value: str) -> int:
@@ -88,9 +91,24 @@ def format_response(text: str) -> str:
     return single_line if len(single_line) <= 80 else single_line[:77] + "..."
 
 
-def terminal_table(rows: list[tuple[str, int, int, str, str, str, str]]) -> str:
+def match_found(text: str, word: str | None) -> bool:
+    if not word:
+        return False
+    return re.search(rf"(?<!\w){re.escape(word)}(?!\w)", text, re.IGNORECASE) is not None
+
+
+def match_marker(matches: list[bool]) -> str:
+    if all(matches):
+        return "x"
+    if any(matches):
+        return "*"
+    return "-"
+
+
+def terminal_table(rows: list[tuple[str, str, int, int, str, str, str, str]]) -> str:
     headers = (
         "Name",
+        "Match",
         "Pass",
         "Fail",
         "Input",
@@ -99,15 +117,15 @@ def terminal_table(rows: list[tuple[str, int, int, str, str, str, str]]) -> str:
         "Time (avg / min / max)",
     )
     values = [
-        (name, str(passed), str(failed), input_tokens, effective_tokens, billable_tokens, timing)
-        for name, passed, failed, input_tokens, effective_tokens, billable_tokens, timing in rows
+        (name, match, str(passed), str(failed), input_tokens, effective_tokens, billable_tokens, timing)
+        for name, match, passed, failed, input_tokens, effective_tokens, billable_tokens, timing in rows
     ]
     widths = [
         max(len(headers[index]), *(len(row[index]) for row in values))
         for index in range(len(headers))
     ]
 
-    def format_row(row: tuple[str, str, str, str, str, str, str]) -> str:
+    def format_row(row: tuple[str, str, str, str, str, str, str, str]) -> str:
         cells = [
             row[0].ljust(widths[0]),
             row[1].rjust(widths[1]),
@@ -116,6 +134,7 @@ def terminal_table(rows: list[tuple[str, int, int, str, str, str, str]]) -> str:
             row[4].rjust(widths[4]),
             row[5].rjust(widths[5]),
             row[6].rjust(widths[6]),
+            row[7].rjust(widths[7]),
         ]
         return " | ".join(cells)
 
@@ -153,6 +172,8 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    print(f"Model: {MODEL}\nThinking level: {THINKING_LEVEL}\n", flush=True)
+
     executable = shutil.which(args.codex_path) or args.codex_path
     if not shutil.which(args.codex_path) and not Path(args.codex_path).is_file():
         print(f"Codex executable was not found: {args.codex_path}", file=sys.stderr)
@@ -175,8 +196,11 @@ def main() -> int:
     wrapper = CodexWrapper(
         executable,
         args.timeout,
+        model=MODEL,
+        reasoning_effort=THINKING_LEVEL,
         system_prompt_file=ROOT / "benchmark-system-prompt.txt",
         skill_sources=(SKILL_SOURCE,),
+        profile_config_file=LEAN_PROFILE,
     )
     metrics: dict[str, list[dict[str, Any]]] = {str(test["name"]): [] for test in TESTS}
 
@@ -201,6 +225,10 @@ def main() -> int:
             control, skill = control_values(result.assistant_text)
             expected = test["expected"]
             passed = result.return_code == 0 and control == expected["control"] and skill == expected["skill"]
+            match_word = test.get("match", expected.get("match"))
+            if match_word is not None:
+                match_word = str(match_word)
+            matched = match_found(result.assistant_text, match_word)
             usage = run_usage(result, payload_size)
             record = {
                 "pass": pass_number,
@@ -212,6 +240,8 @@ def main() -> int:
                 "passed": passed,
                 "control": control,
                 "skill": skill,
+                "match": match_word,
+                "matched": matched,
                 "expected": expected,
                 "payload_size": payload_size,
                 **usage,
@@ -232,12 +262,13 @@ def main() -> int:
                 flush=True,
             )
 
-    table_rows: list[tuple[str, int, int, str, str, str, str]] = []
+    table_rows: list[tuple[str, str, int, int, str, str, str, str]] = []
     for test in TESTS:
         name = str(test["name"])
         runs = metrics[name]
         passed_count = sum(1 for run in runs if run["passed"])
         failed_count = len(runs) - passed_count
+        match_status = match_marker([run["matched"] for run in runs])
         input_tokens = sum(run["input_tokens"] for run in runs)
         effective_tokens = sum(run["effective_tokens"] for run in runs)
         billable_tokens = sum(run["billable_tokens"] for run in runs)
@@ -250,15 +281,16 @@ def main() -> int:
             f"{format_duration(min(durations))}s / {format_duration(max(durations))}s"
         )
         table_rows.append(
-            (name, passed_count, failed_count, input_usage, effective_usage, billable_usage, timing)
+            (name, match_status, passed_count, failed_count, input_usage, effective_usage, billable_usage, timing)
         )
 
     summary = terminal_table(table_rows)
     print("\n" + summary)
-    print(f"\npayload size: {format_number(payload_size)} tokens ({payload_file.stat().st_size} bytes / 3)")
+    payload_summary = f"payload size: ~{format_number(payload_size)} tokens/run"
+    print(f"\n{payload_summary}")
     print(f"\nArtifacts: {result_directory}")
     (result_directory / "summary.txt").write_text(
-        summary + f"\n\npayload size: {format_number(payload_size)} tokens ({payload_file.stat().st_size} bytes / 3)\n",
+        summary + f"\n\n{payload_summary}\n",
         encoding="utf-8",
     )
     return 0 if all(run["passed"] for runs in metrics.values() for run in runs) else 1
