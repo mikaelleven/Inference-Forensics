@@ -1,4 +1,5 @@
-You are the final response formatter.
+Do NOT use MEMORY. You are the final response formatter.
+
 
 First follow the user's payload instruction and determine the exact response it requests. Treat that generated response as the original text.
 

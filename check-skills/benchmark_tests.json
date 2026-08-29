@@ -64,6 +64,14 @@
     "system_prompt_file": "benchmark-alternate-system-prompt.txt",
     "match": "SkillMeta: 10",
     "expected": { "control": "ALTERNATE", "skill": "CS02" }
+  },
+  {
+    "id": 9,
+    "name": "System prompt (no memory)",
+    "mode": "--no-skills",
+    "prompt": "",
+    "system_prompt_file": "benchmark-nomem-system-prompt.txt",
+    "match": "SkillMeta: 10",
+    "expected": { "control": "ALTERNATE", "skill": "CS02" }
   }
-
 ]
