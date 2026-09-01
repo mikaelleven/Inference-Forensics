@@ -1,5 +1,7 @@
 # Inference Forensics
 
+**Explore · Observe · Learn · Improve**
+
 Inference Forensics is a personal, evidence-driven research repository for learning how large language models (LLMs), inference models, and agentic AI behave in different conditions.
 
 ## Purpose
