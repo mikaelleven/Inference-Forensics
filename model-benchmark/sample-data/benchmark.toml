@@ -9,6 +9,8 @@ prompt_file = "prompt.md"
 payload_file = "payload.txt"
 output_dir = "../data"
 name = "sample-models"
+# Optional summary ordering: auto/default, time, usage, speed, or name.
+sort = "auto"
 
 # Compact alternative when no per-model overrides are needed:
 # models = ["phi4-mini:latest", "qwen3.5:4b"]

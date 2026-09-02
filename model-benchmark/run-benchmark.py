@@ -11,6 +11,8 @@ The configuration file is TOML, for example:
     payload_file = "sample-data/payload.txt"
     output_dir = "data"
     name = "local-models"
+    # Optional display ordering: auto/default, time, usage, speed, or name.
+    sort = "auto"
 
     # Compact form when no per-model overrides are needed:
     # models = ["qwen3.5:4b", "qwen2.5:7b"]
@@ -41,6 +43,7 @@ from typing import Any
 
 
 THINKING_VALUES = {"off", "on", "max"}
+SORT_VALUES = {"auto", "default", "time", "usage", "speed", "name"}
 CONFIG_FILENAMES = {".benchmark.toml", ".benchmark", "benchmark.toml"}
 ExpectedType = type | tuple[type, ...]
 BENCHMARK_SCRIPT = Path(__file__).resolve().with_name("ollama-bench.py")
@@ -68,6 +71,7 @@ class BenchmarkConfig:
     payload_file: Path
     output_dir: Path
     models: tuple[ModelConfig, ...]
+    sort: str
 
 
 def parse_args() -> argparse.Namespace:
@@ -174,6 +178,16 @@ def read_thinking(table: Mapping[str, Any], key: str, default: str) -> str:
     return value
 
 
+def read_sort(table: Mapping[str, Any], key: str = "sort") -> str:
+    value = read_non_empty_string(table, key, default="auto").lower()
+    if value not in SORT_VALUES:
+        choices = ", ".join(sorted(SORT_VALUES))
+        raise ConfigurationError(
+            f"Configuration value {key!r} must be one of: {choices}"
+        )
+    return "auto" if value == "default" else value
+
+
 def resolve_relative_path(value: str, base_dir: Path) -> Path:
     path = Path(value).expanduser()
     return path.resolve() if path.is_absolute() else (base_dir / path).resolve()
@@ -222,6 +236,7 @@ def load_config(argument: Path) -> BenchmarkConfig:
         )
 
     thinking = read_thinking(raw_config, "max_thinking", "off")
+    sort = read_sort(raw_config)
     prompt_value = read_non_empty_string(raw_config, "prompt_file")
     payload_value = read_non_empty_string(raw_config, "payload_file")
     prompt_file = resolve_relative_path(prompt_value, config_path.parent)
@@ -295,6 +310,7 @@ def load_config(argument: Path) -> BenchmarkConfig:
         payload_file=payload_file,
         output_dir=output_dir,
         models=tuple(models),
+        sort=sort,
     )
 
 
@@ -349,11 +365,26 @@ def run_model(config: BenchmarkConfig, model: ModelConfig, output_path: Path) ->
 
 
 def format_number(value: Any) -> str:
+    """Format a metric using compact, magnitude-dependent precision."""
     if not isinstance(value, (int, float)) or isinstance(value, bool):
         raise RuntimeError(f"Expected a numeric benchmark value, got {value!r}")
-    if float(value).is_integer():
-        return str(int(value))
-    return f"{value:.2f}".rstrip("0").rstrip(".")
+
+    numeric_value = float(value)
+    magnitude = abs(numeric_value)
+
+    if magnitude >= 1500:
+        formatted = f"{numeric_value / 1000:.1f}".rstrip("0").rstrip(".")
+        return f"{formatted}K"
+
+    if magnitude >= 100:
+        decimals = 0
+    elif magnitude >= 10:
+        decimals = 1
+    else:
+        decimals = 2
+
+    formatted = f"{numeric_value:.{decimals}f}".rstrip("0").rstrip(".")
+    return "0" if formatted in {"-0", "-0."} else formatted
 
 
 def read_results(output_path: Path) -> list[Mapping[str, Any]]:
@@ -391,7 +422,40 @@ def result_median(result: Mapping[str, Any], metric: str) -> Any:
         ) from None
 
 
-def format_summary(results: list[Mapping[str, Any]]) -> str:
+def sort_results(
+    results: list[Mapping[str, Any]], sort: str
+) -> list[Mapping[str, Any]]:
+    """Return results ordered for display; ``auto`` preserves input order."""
+    if sort == "auto":
+        return results
+
+    if sort == "name":
+        return sorted(results, key=lambda result: str(result.get("model", "")).casefold())
+
+    metric = {
+        "time": "ollama_total_s",
+        "usage": "total_tokens",
+    }.get(sort)
+    if metric is not None:
+        return sorted(
+            results,
+            key=lambda result: float(result_median(result, metric)),
+            reverse=sort == "usage",
+        )
+
+    if sort == "speed":
+        return sorted(
+            results,
+            key=lambda result: float(result_median(result, "total_tokens"))
+            / float(result_median(result, "ollama_total_s")),
+            reverse=True,
+        )
+
+    raise RuntimeError(f"Unsupported result sort: {sort!r}")
+
+
+def format_summary(results: list[Mapping[str, Any]], sort: str = "auto") -> str:
+    results = sort_results(results, sort)
     headers = [
         "model",
         "thinking",
@@ -465,7 +529,7 @@ def main() -> int:
 
         results = read_results(output_path)
         print()
-        print(format_summary(results))
+        print(format_summary(results, config.sort))
         return 0
     except (ConfigurationError, RuntimeError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
