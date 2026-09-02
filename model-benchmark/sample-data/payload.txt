@@ -1,0 +1,21 @@
+Elon Musk thinks there's massive fraud
+in the government because the database
+has the same social security number
+twice who's going to tell him that a SQL
+database and an Excel spreadsheet aren't
+the same thing let me make this really
+simple if you record some social
+security recipients payment for July and
+then record their next payment in August
+congratulations you now have duplicate
+ssns in the database thankfully we've
+developed cuttingedge technology to only
+get unique ssns using SQL and yes as
+someone who briefly worked in government
+using SQL we exist and Elon I have great
+news for you they even have an
+equivalent in Excel not that I would
+recommend storing all of our personal
+data in an Excel spreadsheet on your
+desktop please don't do that you're not
+doing that right
