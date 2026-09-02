@@ -92,13 +92,26 @@ class CodexWrapper:
         system_prompt: str | None = None,
         system_prompt_file: PathLike | None = None,
         system_prompt_filename: str | None = None,
+        workdir: PathLike | None = None,
+        sandbox: str = "read-only",
     ) -> CodexResult:
         """Run one prompt and return its raw JSONL and extracted data.
 
         A system prompt supplied to this method overrides the default prompt
         configured on the wrapper. ``system_prompt_file`` is an alternative
-        to prompt text and may be used for a per-request custom prompt.
+        to prompt text and may be used for a per-request custom prompt. When
+        ``workdir`` is omitted, Codex runs in a temporary directory; an
+        explicit directory is resolved and used without wrapper-managed
+        cleanup.
         """
+        resolved_workdir: Path | None = None
+        if workdir is not None:
+            resolved_workdir = Path(workdir).resolve()
+            if not resolved_workdir.exists():
+                raise FileNotFoundError(f"Working directory was not found: {resolved_workdir}")
+            if not resolved_workdir.is_dir():
+                raise NotADirectoryError(f"Working directory is not a directory: {resolved_workdir}")
+
         if system_prompt is not None and system_prompt_file is not None:
             raise ValueError("Pass either system_prompt or system_prompt_file, not both.")
 
@@ -120,9 +133,12 @@ class CodexWrapper:
         with tempfile.TemporaryDirectory(prefix="codex-run-") as temp_dir:
             temp_root = Path(temp_dir)
             codex_home = temp_root / "codex-home"
-            workdir = temp_root / "workdir"
             codex_home.mkdir()
-            workdir.mkdir()
+            if resolved_workdir is None:
+                run_workdir = temp_root / "workdir"
+                run_workdir.mkdir()
+            else:
+                run_workdir = resolved_workdir
             self._copy_authentication(codex_home)
             profile_name = self._copy_profile(codex_home)
             instructions_file = self._write_instructions_file(
@@ -175,14 +191,14 @@ class CodexWrapper:
                 "--json",
                 "--ephemeral",
                 "--sandbox",
-                "read-only",
+                sandbox,
                 "--skip-git-repo-check",
                 prompt,
             ])
             try:
                 completed = subprocess.run(
                     command,
-                    cwd=workdir,
+                    cwd=run_workdir,
                     env=environment,
                     capture_output=True,
                     text=True,
