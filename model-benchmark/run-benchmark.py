@@ -35,7 +35,7 @@ import sys
 import tomllib
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -310,7 +310,7 @@ def make_output_path(config: BenchmarkConfig) -> Path:
             f"Failed to create output directory {config.output_dir}: {exc}"
         ) from exc
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_path = config.output_dir / f"{timestamp}_{config.name}_results.jsonl"
 
     if output_path.exists():
