@@ -41,6 +41,7 @@ from typing import Any
 
 
 THINKING_VALUES = {"off", "on", "max"}
+CONFIG_FILENAMES = {".benchmark.toml", ".benchmark", "benchmark.toml"}
 ExpectedType = type | tuple[type, ...]
 BENCHMARK_SCRIPT = Path(__file__).resolve().with_name("ollama-bench.py")
 
@@ -79,7 +80,10 @@ def parse_args() -> argparse.Namespace:
     _ = parser.add_argument(
         "config",
         type=Path,
-        help="Benchmark TOML file, or a directory containing one TOML file.",
+        help=(
+            "Benchmark config file, or a directory containing "
+            ".benchmark.toml, .benchmark, or benchmark.toml."
+        ),
     )
     return parser.parse_args()
 
@@ -92,11 +96,15 @@ def resolve_config_path(argument: Path) -> tuple[Path, bool]:
         candidates = sorted(
             candidate
             for candidate in path.iterdir()
-            if candidate.is_file() and candidate.suffix.lower() == ".toml"
+            if candidate.is_file()
+            and candidate.name.lower() in CONFIG_FILENAMES
         )
 
         if not candidates:
-            raise ConfigurationError(f"No TOML configuration file found in {path}")
+            raise ConfigurationError(
+                f"No supported benchmark config found in {path}; expected "
+                ".benchmark.toml, .benchmark, or benchmark.toml"
+            )
         if len(candidates) > 1:
             names = ", ".join(candidate.name for candidate in candidates)
             raise ConfigurationError(
@@ -109,8 +117,10 @@ def resolve_config_path(argument: Path) -> tuple[Path, bool]:
         raise ConfigurationError(f"Configuration path does not exist: {path}")
     if not path.is_file():
         raise ConfigurationError(f"Configuration path is not a file: {path}")
-    if path.suffix.lower() != ".toml":
-        raise ConfigurationError("The benchmark configuration must be a TOML file")
+    if path.suffix.lower() != ".toml" and path.name.lower() != ".benchmark":
+        raise ConfigurationError(
+            "The benchmark configuration must be a TOML file or named .benchmark"
+        )
 
     return path, False
 
