@@ -10,6 +10,10 @@ payload_file = "payload.txt"
 output_dir = "../data"
 name = "sample-models"
 
+# Compact alternative when no per-model overrides are needed:
+# models = ["phi4-mini:latest", "qwen3.5:4b"]
+# Use either the compact form above or the full table form below.
+
 # Add or remove model entries as needed for the Ollama installation.
 [[models]]
 model = "phi4-mini:latest"

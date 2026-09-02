@@ -12,6 +12,9 @@ The configuration file is TOML, for example:
     output_dir = "data"
     name = "local-models"
 
+    # Compact form when no per-model overrides are needed:
+    # models = ["qwen3.5:4b", "qwen2.5:7b"]
+
     [[models]]
     model = "qwen3.5:4b"
 
@@ -245,21 +248,28 @@ def load_config(argument: Path) -> BenchmarkConfig:
     raw_models = raw_config.get("models")
     if not isinstance(raw_models, list) or not raw_models:
         raise ConfigurationError(
-            "Configuration value 'models' must be a non-empty array of tables"
+            "Configuration value 'models' must be a non-empty array of strings "
+            "or tables"
         )
 
     models: list[ModelConfig] = []
     for index, raw_model in enumerate(raw_models, start=1):
-        if not isinstance(raw_model, dict):
-            raise ConfigurationError(f"Model entry {index} must be a TOML table")
-
-        model_value = raw_model.get("model", raw_model.get("name"))
-        if not isinstance(model_value, str) or not model_value.strip():
+        if isinstance(raw_model, str):
+            model_value = raw_model
+            model_thinking = thinking
+        elif isinstance(raw_model, dict):
+            model_value = raw_model.get("model", raw_model.get("name"))
+            model_thinking = read_thinking(raw_model, "max_thinking", thinking)
+        else:
             raise ConfigurationError(
-                f"Model entry {index} requires a non-empty 'model' value"
+                f"Model entry {index} must be a string or TOML table"
             )
 
-        model_thinking = read_thinking(raw_model, "max_thinking", thinking)
+        if not isinstance(model_value, str) or not model_value.strip():
+            raise ConfigurationError(
+                f"Model entry {index} requires a non-empty model name"
+            )
+
         models.append(
             ModelConfig(name=model_value.strip(), thinking=model_thinking)
         )
