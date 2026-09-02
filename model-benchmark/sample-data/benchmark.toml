@@ -1,0 +1,19 @@
+# Sample combined benchmark configuration.
+# Paths are relative to this TOML file.
+
+runs = 3
+warmup = 1
+max_thinking = "off"
+temperature = 0
+prompt_file = "prompt.md"
+payload_file = "payload.txt"
+output_dir = "../data"
+name = "sample-models"
+
+# Add or remove model entries as needed for the Ollama installation.
+[[models]]
+model = "phi4-mini:latest"
+
+[[models]]
+model = "qwen3.5:4b"
+# max_thinking = "on"  # Optional per-model override.
