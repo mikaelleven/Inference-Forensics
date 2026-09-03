@@ -1,0 +1,5 @@
+id: 02-medium
+name: Dependency-aware job queue
+prompt_file: prompt.md
+input_dir: input
+evaluator: evaluator/evaluate.py

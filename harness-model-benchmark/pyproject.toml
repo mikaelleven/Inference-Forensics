@@ -1,0 +1,9 @@
+[project]
+name = "harness-model-benchmark"
+version = "0.1.0"
+description = "Small, deterministic benchmark harness for comparing coding models and coding-agent harnesses."
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

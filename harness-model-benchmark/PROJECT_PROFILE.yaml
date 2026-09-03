@@ -1,0 +1,29 @@
+project:
+  name: harness-model-benchmark
+  description: "Small, deterministic benchmark harness for comparing coding models and coding-agent harnesses."
+  kind: application
+  shape: application
+  interfaces:
+    - cli
+  platforms:
+    - cross-platform
+  constraints: Preserve deterministic fixture isolation and external Python evaluators.
+technology:
+  primary:
+    language: python
+    name: Python
+    framework: null
+    version: 3.11
+  secondary:
+    language: python
+    name: Python
+    version: 3.11
+    platform: cross-platform
+product:
+  distribution: repository
+blueprint:
+  id: python.cli
+environment:
+  initialize: true
+  install_missing_tools: true
+  sync_dependencies: true

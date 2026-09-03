@@ -1,0 +1,59 @@
+version: 1
+
+benchmark:
+  name: harness-model-benchmark
+  runs: 3
+  warmup_runs: 0
+  timeout_seconds: 300
+  output_dir: null               # null => ./results/<UTC timestamp>/
+  system_prompt_file: benchmark-system-prompt.md
+
+fixtures:
+  - id: 01-simple
+  - id: 02-medium
+  - id: 03-tricky
+
+models:
+  # Same model through Pi: useful for model-under-common-harness comparisons.
+  - name: terra-low-pi
+    harness: pi
+    provider: openai-codex
+    model: gpt-5.6-terra
+    reasoning: low
+
+  # Native Codex baseline for harness comparisons.
+  - name: terra-low-codex
+    harness: codex
+    model: gpt-5.6-terra
+    reasoning: low
+    sandbox: workspace-write
+
+  # Local model through the same Pi harness.
+  - name: qwen35-4b-pi
+    harness: pi
+    provider: ollama
+    model: qwen3.5:4b
+    reasoning: low
+    temperature: 0.0
+    top_p: 1.0
+    seed: 42
+    ollama:
+      base_url: http://localhost:11434/v1
+      context_window: 65536
+      max_tokens: 8192
+      supports_reasoning: true
+
+  # Enable only after confirming the model is exposed by your Pi openai-codex provider/account.
+  - name: luna-high-pi
+    enabled: false
+    harness: pi
+    provider: openai-codex
+    model: gpt-5.6-luna
+    reasoning: high
+
+  - name: luna-high-codex
+    enabled: false
+    harness: codex
+    model: gpt-5.6-luna
+    reasoning: high
+    sandbox: workspace-write

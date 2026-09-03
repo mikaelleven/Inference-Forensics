@@ -1,0 +1,5 @@
+id: 01-simple
+name: Clamp boundary bug
+prompt_file: prompt.md
+input_dir: input
+evaluator: evaluator/evaluate.py

@@ -1,0 +1,5 @@
+id: 03-tricky
+name: Policy precedence and cache invalidation
+prompt_file: prompt.md
+input_dir: input
+evaluator: evaluator/evaluate.py
