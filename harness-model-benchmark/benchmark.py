@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
+
 import shutil
 import statistics
 import subprocess
@@ -17,12 +17,35 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from codex_runner import CodexResult, CodexWrapper
 from pi_runner import PiResult, PiWrapper
 
 ROOT = Path(__file__).resolve().parent
+
+
+def ensure_runtime_dependencies() -> None:
+    """Re-run this script in the project environment when launched directly."""
+    try:
+        import yaml  # noqa: F401
+    except ModuleNotFoundError as exc:
+        if exc.name != "yaml":
+            raise
+        uv = shutil.which("uv")
+        if uv is None:
+            raise SystemExit(
+                "PyYAML is not installed. Install dependencies with "
+                "'python -m pip install -r requirements.txt' or install uv."
+            ) from exc
+        script = Path(__file__).resolve()
+        completed = subprocess.run(
+            [uv, "run", "--project", str(ROOT), "python", str(script), *sys.argv[1:]],
+            check=False,
+        )
+        raise SystemExit(completed.returncode)
+
+
+ensure_runtime_dependencies()
+import yaml
 
 
 @dataclass

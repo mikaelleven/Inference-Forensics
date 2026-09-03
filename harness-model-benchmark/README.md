@@ -49,7 +49,7 @@ evaluator/             # external; never copied into the workspace
 ## Requirements
 
 - Python 3.11+
-- `pip install -r requirements.txt`
+- `uv sync` (or `pip install -r requirements.txt`)
 - Pi when using `harness: pi`
 - Codex CLI when using `harness: codex`
 - Ollama when using `provider: ollama`
@@ -107,19 +107,19 @@ Important model fields:
 Validate only:
 
 ```powershell
-python benchmark.py benchmark.yaml --validate
+uv run python benchmark.py benchmark.yaml --validate
 ```
 
 Run everything:
 
 ```powershell
-python benchmark.py benchmark.yaml
+uv run python benchmark.py benchmark.yaml
 ```
 
 Filter profiles/fixtures:
 
 ```powershell
-python benchmark.py benchmark.yaml --model terra-low-pi --model qwen35-4b-pi --fixture 03-tricky
+uv run python benchmark.py benchmark.yaml --model terra-low-pi --model qwen35-4b-pi --fixture 03-tricky
 ```
 
 ## Output
