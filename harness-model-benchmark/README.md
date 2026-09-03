@@ -98,7 +98,12 @@ Important model fields:
   model: gpt-5.6-terra
   reasoning: low
   sandbox: workspace-write
+  approve_for_me: true
 ```
+
+`approve_for_me` is `false` by default. Set it to `true` only with
+`sandbox: workspace-write` for an unattended agent task that must modify its
+isolated workspace. Read-only profiles must leave it disabled.
 
 `temperature`, `top_p`, and `seed` are currently applied by this suite only to Pi+Ollama profiles. If configured for Pi+OpenAI/Codex or native Codex, they are recorded under `ignored_settings` instead of silently pretending they were applied.
 

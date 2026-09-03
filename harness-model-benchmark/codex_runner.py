@@ -94,6 +94,7 @@ class CodexWrapper:
         system_prompt_filename: str | None = None,
         workdir: PathLike | None = None,
         sandbox: str = "read-only",
+        approve_for_me: bool = False,
     ) -> CodexResult:
         """Run one prompt and return its raw JSONL and extracted data.
 
@@ -104,7 +105,8 @@ class CodexWrapper:
         When ``workdir`` is omitted, Codex runs in the existing isolated empty
         temporary directory. When supplied, it must already exist and Codex
         runs with it as the process working directory. ``sandbox`` is passed
-        through to ``codex exec --sandbox``.
+        through to ``codex exec --sandbox``. ``approve_for_me`` explicitly
+        enables Codex's automatic approval mode for a writable workspace.
         """
         if system_prompt is not None and system_prompt_file is not None:
             raise ValueError("Pass either system_prompt or system_prompt_file, not both.")
@@ -126,6 +128,9 @@ class CodexWrapper:
 
         if not sandbox or not sandbox.strip():
             raise ValueError("sandbox must be a non-empty string.")
+        sandbox = sandbox.strip()
+        if approve_for_me and sandbox != "workspace-write":
+            raise ValueError("approve_for_me requires sandbox='workspace-write'.")
 
         explicit_workdir = Path(workdir).resolve() if workdir is not None else None
         if explicit_workdir is not None and not explicit_workdir.is_dir():
@@ -191,9 +196,10 @@ class CodexWrapper:
                 "--ephemeral",
                 "--sandbox",
                 sandbox,
-                "--skip-git-repo-check",
-                prompt,
             ])
+            if approve_for_me:
+                command.append("--approve-for-me")
+            command.extend(("--skip-git-repo-check", prompt))
             try:
                 completed = subprocess.run(
                     command,

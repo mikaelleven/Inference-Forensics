@@ -154,6 +154,12 @@ def validate_model(model: dict[str, Any]) -> None:
         raise ValueError(f"Unsupported harness {harness!r} in profile {model['name']!r}")
     if harness == "pi" and not str(model.get("provider", "")).strip():
         raise ValueError(f"Pi model profile {model['name']!r} is missing 'provider'.")
+    if harness == "codex":
+        approve_for_me = model.get("approve_for_me", False)
+        if not isinstance(approve_for_me, bool):
+            raise ValueError(f"Model profile {model['name']!r} has a non-boolean 'approve_for_me'.")
+        if approve_for_me and str(model.get("sandbox", "workspace-write")) != "workspace-write":
+            raise ValueError(f"Model profile {model['name']!r} enables approval outside workspace-write.")
 
 
 def executable(name: str) -> str:
@@ -303,12 +309,17 @@ def run_once(
                 prompt,
                 workdir=workspace,
                 sandbox=str(model.get("sandbox", "workspace-write")),
+                approve_for_me=bool(model.get("approve_for_me", False)),
                 system_prompt=system_prompt,
                 load_skills=False,
             )
             usage = codex_usage(result)
             tool_calls: dict[str, int] = {}
-            applied = {"reasoning": reasoning_value(model.get("reasoning", "off")), "sandbox": model.get("sandbox", "workspace-write")}
+            applied = {
+                "reasoning": reasoning_value(model.get("reasoning", "off")),
+                "sandbox": model.get("sandbox", "workspace-write"),
+                "approve_for_me": bool(model.get("approve_for_me", False)),
+            }
             ignored = {key: model[key] for key in ("temperature", "top_p", "seed") if model.get(key) is not None}
         else:
             result = runner.run(prompt, workdir=workspace, system_prompt=system_prompt)
