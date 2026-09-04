@@ -115,7 +115,9 @@ class PiWrapper:
             if self.reasoning:
                 command.extend(("--thinking", normalize_pi_reasoning(self.reasoning)))
             if system_prompt:
-                command.extend(("--system-prompt", system_prompt))
+                system_prompt_file = temp_root / "system-prompt.md"
+                system_prompt_file.write_text(system_prompt, encoding="utf-8")
+                command.extend(("--system-prompt", str(system_prompt_file)))
 
             command.extend(("-p", prompt))
 
