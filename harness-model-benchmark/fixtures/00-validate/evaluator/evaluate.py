@@ -11,6 +11,15 @@ EXPECTED = {
 }
 
 
+def _unwrap_json_code_block(text: str) -> str:
+    """Return JSON content from either plain input or a fenced code block."""
+    stripped = text.strip()
+    lines = stripped.splitlines()
+    if len(lines) >= 3 and lines[0].strip().lower() == "```json" and lines[-1].strip() == "```":
+        return "\n".join(lines[1:-1]).strip()
+    return stripped
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print("usage: evaluate.py <workspace>", file=sys.stderr)
@@ -20,7 +29,7 @@ def main() -> int:
     error: str | None = None
 
     try:
-        value = json.loads(sys.stdin.read())
+        value = json.loads(_unwrap_json_code_block(sys.stdin.read()))
         if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
             raise ValueError("report must be a JSON array of strings")
         listed = value
