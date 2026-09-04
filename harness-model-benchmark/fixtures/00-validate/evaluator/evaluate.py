@@ -52,7 +52,7 @@ def main() -> int:
         if error is None and not boundary_failure
         else 0.0
     )
-    exact = error is None and listed == sorted(EXPECTED)
+    exact = error is None and listed_set == EXPECTED and duplicate_count == 0
     passed = exact and not boundary_failure
 
     result = {
