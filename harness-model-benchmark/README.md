@@ -138,7 +138,7 @@ results/<timestamp>/
   benchmark.yaml
   runs.jsonl
   summary.json
-  summary.md
+  summary.txt
   artifacts/<model>/<fixture>/run-XX/
     record.json
     runner.jsonl
@@ -148,7 +148,7 @@ results/<timestamp>/
     workspace/
 ```
 
-The summary reports success rate, evaluator score, time, token usage, turns, and tool calls. For Codex, turn/tool-call counts may be unavailable depending on the CLI JSON event schema, so they remain zero rather than being guessed.
+The plain-text summary table reports success rate, evaluator score, time, token usage, turns, and tool calls. Numeric values are compacted dynamically for terminal readability (for example, `10.5K` for large token counts). For Codex, turn/tool-call counts may be unavailable depending on the CLI JSON event schema, so they remain zero rather than being guessed.
 
 ## Isolation / fairness decisions
 

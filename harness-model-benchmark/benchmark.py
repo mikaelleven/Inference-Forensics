@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 
 import shutil
 import statistics
@@ -409,22 +410,46 @@ def summarize(records: list[dict[str, Any]]) -> dict[str, Any]:
     return {"by_model_fixture": rows}
 
 
-def summary_markdown(summary: dict[str, Any]) -> str:
+def format_number(value: float | int) -> str:
+    """Format numeric table values compactly without unnecessary decimals."""
+    number = float(value)
+    if number.is_integer():
+        integer = int(number)
+        if abs(integer) >= 1000 and abs(integer) / 1000 >= 1.1:
+            return f"{integer / 1000:.1f}K"
+        return str(integer)
+    if abs(number) >= 1000:
+        rounded = round(number)
+        if abs(rounded) >= 1000 and abs(rounded) / 1000 >= 1.1:
+            return f"{number / 1000:.1f}K"
+        return str(rounded)
+    rounded_up = math.ceil(number * 100) / 100 if number > 0 else math.floor(number * 100) / 100
+    return f"{rounded_up:.2f}".rstrip("0").rstrip(".")
+
+
+def summary_table(summary: dict[str, Any]) -> str:
     rows = summary["by_model_fixture"]
     headers = ["Model profile", "Fixture", "Success", "Score", "Time s", "Input", "Output", "Cached", "Turns", "Tools"]
-    lines = ["| " + " | ".join(headers) + " |", "| " + " | ".join(["---"] * len(headers)) + " |"]
-    for r in rows:
-        lines.append(
-            "| " + " | ".join([
-                str(r["model_profile"]), str(r["fixture"]), f"{r['successes']}/{r['runs']}",
-                str(r["median_score"]), str(r["median_time_s"]), str(r["median_input_tokens"]),
-                str(r["median_output_tokens"]), str(r["median_cached_tokens"]), str(r["median_turns"]),
-                str(r["median_tool_calls"]),
-            ]) + " |"
-        )
+    table_rows = [
+        [
+            str(r["model_profile"]), str(r["fixture"]), f"{r['successes']}/{r['runs']}",
+            format_number(r["median_score"]), format_number(r["median_time_s"]),
+            format_number(r["median_input_tokens"]), format_number(r["median_output_tokens"]),
+            format_number(r["median_cached_tokens"]), format_number(r["median_turns"]),
+            format_number(r["median_tool_calls"]),
+        ]
+        for r in rows
+    ]
+    widths = [max(len(header), *(len(row[index]) for row in table_rows)) for index, header in enumerate(headers)]
+
+    def render(row: list[str]) -> str:
+        return " | ".join(value.ljust(width) if index < 2 else value.rjust(width) for index, (value, width) in enumerate(zip(row, widths)))
+
+    lines = [render(headers), "-+-".join("-" * width for width in widths)]
+    lines.extend(render(row) for row in table_rows)
     lines.extend([
         "",
-        "> Token counts are exact only within the tokenizer/provider that reported them. Compare task success and wall-clock across different model families before comparing raw token counts directly.",
+        "Token counts are exact only within the tokenizer/provider that reported them. Compare task success and wall-clock across different model families before comparing raw token counts directly.",
     ])
     return "\n".join(lines) + "\n"
 
@@ -475,7 +500,7 @@ def main() -> int:
         output_root = resolve_config_path(config_file, output_setting)
     else:
         output_root = ROOT / "results"
-    run_dir = output_root / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    run_dir = output_root / datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
     run_dir.mkdir(parents=True, exist_ok=False)
     shutil.copy2(config_file, run_dir / "benchmark.yaml")
     run_log = run_dir / "runs.jsonl"
@@ -504,18 +529,18 @@ def main() -> int:
                 with run_log.open("a", encoding="utf-8") as handle:
                     handle.write(json.dumps(record, ensure_ascii=False) + "\n")
                 print(
-                    f"  success={record['success']} score={record['score']:.2f} "
-                    f"time={record['duration_seconds']:.2f}s "
-                    f"tokens={record['input_tokens']}+{record['output_tokens']} "
-                    f"turns={record['turns']} tools={record['tool_calls']}",
+                    f"  success={record['success']} score={format_number(record['score'])} "
+                    f"time={format_number(record['duration_seconds'])}s "
+                    f"tokens={format_number(record['input_tokens'])}+{format_number(record['output_tokens'])} "
+                    f"turns={format_number(record['turns'])} tools={format_number(record['tool_calls'])}",
                     flush=True,
                 )
 
     summary = summarize(measured_records)
     (run_dir / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    markdown = summary_markdown(summary)
-    (run_dir / "summary.md").write_text(markdown, encoding="utf-8")
-    print("\n" + markdown)
+    table = summary_table(summary)
+    (run_dir / "summary.txt").write_text(table, encoding="utf-8")
+    print("\n" + table)
     print(f"Artifacts: {run_dir}")
     return 0 if all(record["success"] for record in measured_records) else 1
 
