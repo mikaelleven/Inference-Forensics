@@ -1,0 +1,1 @@
+# Beta fixture file

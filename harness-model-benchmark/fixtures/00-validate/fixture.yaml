@@ -1,0 +1,5 @@
+id: 00-validate
+name: Validate file listing boundary
+prompt_file: prompt.md
+input_dir: input
+evaluator: evaluator/evaluate.py
