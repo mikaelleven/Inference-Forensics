@@ -2,8 +2,8 @@ version: 1
 
 benchmark:
   name: harness-model-benchmark-chatgpt
-  runs: 3
-  warmup_runs: 1
+  runs: 1
+  warmup_runs: 0
   timeout_seconds: 300
   output_dir: null               # null => ./results/<UTC timestamp>/
   system_prompt_file: benchmark-system-prompt.md
@@ -12,78 +12,78 @@ fixtures:
   - id: 00-validate
 
 models:
-  - name: luna-none-pi
+  - name: "pi: Luna [None]"
     harness: pi
     provider: openai-codex
     model: gpt-5.6-luna
     reasoning: none
 
-  - name: luna-low-pi
+  - name: "pi: Luna [Low]"
     harness: pi
     provider: openai-codex
     model: gpt-5.6-luna
     reasoning: low
 
-  - name: luna-high-pi
+  - name: "pi: Luna [High]"
     harness: pi
     provider: openai-codex
     model: gpt-5.6-luna
     reasoning: high
 
-  - name: luna-none-codex
+  - name: "pi: Terra [None]"
+    harness: pi
+    provider: openai-codex
+    model: gpt-5.6-terra
+    reasoning: none
+
+  - name: "pi: Terra [Low]"
+    harness: pi
+    provider: openai-codex
+    model: gpt-5.6-terra
+    reasoning: low
+
+  - name: "pi: Terra [High]"
+    harness: pi
+    provider: openai-codex
+    model: gpt-5.6-terra
+    reasoning: high
+
+  - name: "codex: Luna [None]"
     harness: codex
     model: gpt-5.6-luna
     reasoning: none
     sandbox: workspace-write
     approve_for_me: true
 
-  - name: luna-low-codex
+  - name: "codex: Luna [Low]"
     harness: codex
     model: gpt-5.6-luna
     reasoning: low
     sandbox: workspace-write
     approve_for_me: true
 
-  - name: luna-high-codex
+  - name: "codex: Luna [High]"
     harness: codex
     model: gpt-5.6-luna
     reasoning: high
     sandbox: workspace-write
     approve_for_me: true
 
-  - name: terra-none-pi
-    harness: pi
-    provider: openai-codex
-    model: gpt-5.6-terra
-    reasoning: none
-
-  - name: terra-low-pi
-    harness: pi
-    provider: openai-codex
-    model: gpt-5.6-terra
-    reasoning: low
-
-  - name: terra-high-pi
-    harness: pi
-    provider: openai-codex
-    model: gpt-5.6-terra
-    reasoning: high
-
-  - name: terra-none-codex
+  - name: "codex: Terra [None]"
     harness: codex
     model: gpt-5.6-terra
     reasoning: none
     sandbox: workspace-write
     approve_for_me: true
 
-  - name: terra-low-codex
+  - name: "codex: Terra [Low]"
     harness: codex
     model: gpt-5.6-terra
     reasoning: low
     sandbox: workspace-write
     approve_for_me: true
 
-  - name: terra-high-codex
+  - name: "codex: Terra [High]"
     harness: codex
     model: gpt-5.6-terra
     reasoning: high
