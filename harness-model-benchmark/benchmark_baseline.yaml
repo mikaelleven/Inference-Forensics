@@ -1,0 +1,60 @@
+# Baseline benchmark to ensure the harnesses is working as expected.
+version: 1
+
+benchmark:
+  name: baseline-validation
+  runs: 1
+  warmup_runs: 0
+  timeout_seconds: 300
+  output_dir: null               # null => ./results/<UTC timestamp>/
+  system_prompt_file: benchmark-system-prompt.md
+  reasoning: none
+
+fixtures:
+  - id: 00-validate
+
+models:
+  - name: "codex: luna [none]"
+    enabled: true
+    harness: codex
+    model: gpt-5.6-luna
+    reasoning: none
+    sandbox: workspace-write
+    approve_for_me: true
+
+  - name: "pi: qwen [none]"
+    enabled: true
+    harness: pi
+    provider: ollama
+    model: qwen3.5:4b
+    reasoning: none
+    temperature: 0.0
+    top_p: 1.0
+    seed: 42
+    ollama:
+      base_url: http://localhost:11434/v1
+      context_window: 65536
+      max_tokens: 8192
+      supports_reasoning: true
+
+  # Enable only after confirming the model is exposed by your Pi openai-codex provider/account.
+  - name: "pi: luna [none]"
+    enabled: true
+    harness: pi
+    provider: openai-codex
+    model: gpt-5.6-luna
+    reasoning: none
+
+  - name: "pi: luna [high]"
+    enabled: true
+    harness: pi
+    provider: openai-codex
+    model: gpt-5.6-luna
+    reasoning: high
+
+  - name: "codex: luna [high]"
+    enabled: true
+    harness: codex
+    model: gpt-5.6-luna
+    reasoning: high
+    # sandbox: workspace-write
