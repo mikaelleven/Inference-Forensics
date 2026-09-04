@@ -1,15 +1,18 @@
 # Harness / Model Benchmark
 
-Small, deterministic benchmark harness for comparing coding models and coding-agent harnesses.
+A reproducible benchmark for comparing coding models, coding-agent harnesses, and reasoning settings on deterministic, real-world-style agent tasks.
 
 ## Purpose
 
-The suite answers two different questions without mixing them:
+This sub-project evaluates how a **model + harness + thinking/reasoning** combination performs when it must complete a specific task in an isolated workspace. It is designed to answer three related, but distinct, questions:
 
-1. **Model comparison under a common harness** — run different cloud/local models through Pi against the same fixtures.
-2. **Harness comparison** — run the same model/fixture through Pi and native Codex and compare the practical outcome.
+1. **Model comparison under a common harness** — run different cloud or local models through Pi against identical fixtures.
+2. **Harness comparison** — run the same model and fixture through Pi and native Codex to measure the practical effects of the harness.
+3. **Efficiency comparison** — benchmark input, output, and cached-token use alongside wall-clock time, turns, and tool calls for each combination.
 
-The primary quality signal is the fixture's external evaluator. Token usage, wall-clock time, turns and tool calls are secondary metrics.
+The primary quality signal is the fixture's deterministic external evaluator: did the agent complete the task, and what score did it earn? Token usage and operational metrics are secondary signals that describe the cost and execution profile of a successful or unsuccessful attempt.
+
+LLM inference can still vary by provider and model. The suite makes the *benchmark process* as deterministic as practical: fixtures and prompts are versioned, every run begins from the same input tree, evaluators are deterministic Python code, and supported sampling controls are fixed. Run multiple repetitions and compare success rates rather than treating any single LLM run as conclusive.
 
 ## Principles
 
@@ -30,21 +33,57 @@ pi_runner.py
 codex_runner.py
 benchmark-system-prompt.md
 benchmark.example.yaml
+benchmark_baseline.yaml  # setup validation only; not a benchmark configuration
 fixtures/
+  00-validate/           # setup validation only; not a benchmark fixture
   01-simple/
   02-medium/
   03-tricky/
 results/
 ```
 
+## Setup validation
+
+`benchmark_baseline.yaml` and the `00-validate` fixture validate that the test bench itself is working: the configured harnesses can run, an isolated fixture workspace is created correctly, the agent receives the task, and the fixture evaluator can produce a result. They are intentionally small checks of harness and fixture structure, not measures of agent capability.
+
+Run this validation configuration after setup or when changing runner/fixture infrastructure:
+
+```powershell
+uv run python benchmark.py benchmark_baseline.yaml
+```
+
+Do **not** include `benchmark_baseline.yaml` or `00-validate` in an actual benchmark run, aggregate, or capability comparison. Use `benchmark.example.yaml` (copied to `benchmark.yaml`) and the numbered task fixtures such as `01-simple`, `02-medium`, and `03-tricky` for those measurements.
+
+## Fixtures
+
+A **fixture** is one self-contained benchmark task. It defines the task presented to the agent, the starting files it may inspect or modify, and an external program that evaluates the completed workspace. Fixtures represent concrete agent work such as validating output, repairing code, or making a specified change—not open-ended chat questions.
+
 Each fixture contains:
 
 ```text
-fixture.yaml
-prompt.md
+fixture.yaml           # id, prompt, input directory, and evaluator entry point
+prompt.md              # task instructions shown to the agent
 input/                 # copied to a fresh temporary workspace for every run
-evaluator/             # external; never copied into the workspace
+evaluator/             # external; never copied into the agent workspace
 ```
+
+To use a benchmark fixture, add its `id` to the `fixtures` list in `benchmark.yaml`, then run the benchmark:
+
+```yaml
+fixtures:
+  - id: 01-simple
+  - id: 03-tricky
+```
+
+Run one benchmark fixture while developing or comparing profiles:
+
+```powershell
+uv run python benchmark.py benchmark.yaml --fixture 03-tricky
+```
+
+`00-validate` is reserved for setup validation through `benchmark_baseline.yaml`; see [Setup validation](#setup-validation).
+
+The runner copies only `input/` into a new temporary workspace for each attempt and invokes the evaluator afterward. Keep evaluator code and expected answers outside `input/`; the agent must not be able to read them. Create a new fixture by following this structure, choosing a unique directory/id, writing a focused `prompt.md`, providing its pristine `input/`, and declaring the evaluator in `fixture.yaml`.
 
 ## Requirements
 
@@ -148,7 +187,15 @@ results/<timestamp>/
     workspace/
 ```
 
-The plain-text summary table reports success rate, evaluator score, time, token usage, turns, and tool calls. Numeric values are compacted dynamically for terminal readability (for example, `10.5K` for large token counts). For Codex, turn/tool-call counts may be unavailable depending on the CLI JSON event schema, so they remain zero rather than being guessed.
+The plain-text summary table reports success rate, evaluator score, time, token usage, turns, and tool calls. `Input`, `Output`, and `Cached` show the token accounting provided by the selected harness; use them to compare the token profile of comparable model/harness/reasoning runs. Because tokenizers and provider accounting differ, raw token totals are not exact cross-family cost comparisons. Numeric values are compacted dynamically for terminal readability (for example, `10.5K` for large token counts). For Codex, turn/tool-call counts may be unavailable depending on the CLI JSON event schema, so they remain zero rather than being guessed.
+
+The following is an example **setup-validation** summary for `00-validate`; it demonstrates the report format only and must not be used to compare benchmark capability:
+
+| Model profile | Fixture | Success | Score | Time s | Input | Output | Cached | Turns | Tools |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| luna-high-codex | 00-validate | 1/1 | 1 | 21.94 | 22.8K | 434 | 14.6K | 0 | 0 |
+| luna-high-pi | 00-validate | 1/1 | 1 | 20.73 | 4.2K | 163 | 0 | 4 | 3 |
+| luna-none-pi | 00-validate | 1/1 | 1 | 20.01 | 4.1K | 127 | 0 | 4 | 3 |
 
 ## Isolation / fairness decisions
 
