@@ -1,0 +1,91 @@
+version: 1
+
+benchmark:
+  name: harness-model-benchmark-chatgpt
+  runs: 3
+  warmup_runs: 1
+  timeout_seconds: 300
+  output_dir: null               # null => ./results/<UTC timestamp>/
+  system_prompt_file: benchmark-system-prompt.md
+
+fixtures:
+  - id: 00-validate
+
+models:
+  - name: luna-none-pi
+    harness: pi
+    provider: openai-codex
+    model: gpt-5.6-luna
+    reasoning: none
+
+  - name: luna-low-pi
+    harness: pi
+    provider: openai-codex
+    model: gpt-5.6-luna
+    reasoning: low
+
+  - name: luna-high-pi
+    harness: pi
+    provider: openai-codex
+    model: gpt-5.6-luna
+    reasoning: high
+
+  - name: luna-none-codex
+    harness: codex
+    model: gpt-5.6-luna
+    reasoning: none
+    sandbox: workspace-write
+    approve_for_me: true
+
+  - name: luna-low-codex
+    harness: codex
+    model: gpt-5.6-luna
+    reasoning: low
+    sandbox: workspace-write
+    approve_for_me: true
+
+  - name: luna-high-codex
+    harness: codex
+    model: gpt-5.6-luna
+    reasoning: high
+    sandbox: workspace-write
+    approve_for_me: true
+
+  - name: terra-none-pi
+    harness: pi
+    provider: openai-codex
+    model: gpt-5.6-terra
+    reasoning: none
+
+  - name: terra-low-pi
+    harness: pi
+    provider: openai-codex
+    model: gpt-5.6-terra
+    reasoning: low
+
+  - name: terra-high-pi
+    harness: pi
+    provider: openai-codex
+    model: gpt-5.6-terra
+    reasoning: high
+
+  - name: terra-none-codex
+    harness: codex
+    model: gpt-5.6-terra
+    reasoning: none
+    sandbox: workspace-write
+    approve_for_me: true
+
+  - name: terra-low-codex
+    harness: codex
+    model: gpt-5.6-terra
+    reasoning: low
+    sandbox: workspace-write
+    approve_for_me: true
+
+  - name: terra-high-codex
+    harness: codex
+    model: gpt-5.6-terra
+    reasoning: high
+    sandbox: workspace-write
+    approve_for_me: true
