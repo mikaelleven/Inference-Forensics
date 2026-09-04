@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import sys
-from pathlib import Path
 
 
 EXPECTED = {
@@ -10,7 +9,6 @@ EXPECTED = {
     "beta.md",
     "nested/gamma.csv",
 }
-REPORT = "file-list.json"
 
 
 def main() -> int:
@@ -18,13 +16,11 @@ def main() -> int:
         print("usage: evaluate.py <workspace>", file=sys.stderr)
         return 2
 
-    workspace = Path(sys.argv[1]).resolve()
-    report = workspace / REPORT
     listed: list[str] = []
     error: str | None = None
 
     try:
-        value = json.loads(report.read_text(encoding="utf-8"))
+        value = json.loads(sys.stdin.read())
         if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
             raise ValueError("report must be a JSON array of strings")
         listed = value

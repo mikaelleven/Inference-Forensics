@@ -261,10 +261,16 @@ def pi_usage(result: PiResult) -> NormalizedRun:
     )
 
 
-def run_evaluator(fixture: Fixture, workspace: Path, timeout: int) -> dict[str, Any]:
+def run_evaluator(
+    fixture: Fixture,
+    workspace: Path,
+    assistant_text: str,
+    timeout: int,
+) -> dict[str, Any]:
     completed = subprocess.run(
         [sys.executable, str(fixture.evaluator), str(workspace)],
         cwd=fixture.root,
+        input=assistant_text,
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -329,7 +335,7 @@ def run_once(
             ignored = result.ignored_settings
         duration = time.perf_counter() - started
 
-        evaluation = run_evaluator(fixture, workspace, timeout)
+        evaluation = run_evaluator(fixture, workspace, result.assistant_text, timeout)
         eval_result = evaluation["result"]
         task_passed = bool(eval_result.get("passed", False))
         score = float(eval_result.get("score", 1.0 if task_passed else 0.0) or 0.0)
