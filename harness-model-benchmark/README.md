@@ -103,7 +103,9 @@ Important model fields:
 
 `approve_for_me` is `false` by default. Set it to `true` only with
 `sandbox: workspace-write` for an unattended agent task that must modify its
-isolated workspace. Read-only profiles must leave it disabled.
+isolated workspace. Codex CLI uses `--approve-for-me` to select that sandbox,
+so the runner does not also pass `--sandbox`. Read-only profiles must leave it
+disabled.
 
 `temperature`, `top_p`, and `seed` are currently applied by this suite only to Pi+Ollama profiles. If configured for Pi+OpenAI/Codex or native Codex, they are recorded under `ignored_settings` instead of silently pretending they were applied.
 

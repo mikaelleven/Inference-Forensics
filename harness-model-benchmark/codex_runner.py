@@ -105,8 +105,8 @@ class CodexWrapper:
         When ``workdir`` is omitted, Codex runs in the existing isolated empty
         temporary directory. When supplied, it must already exist and Codex
         runs with it as the process working directory. ``sandbox`` is passed
-        through to ``codex exec --sandbox``. ``approve_for_me`` explicitly
-        enables Codex's automatic approval mode for a writable workspace.
+        through to ``codex exec --sandbox`` unless ``approve_for_me`` is set;
+        that Codex CLI option itself selects the workspace-write sandbox.
         """
         if system_prompt is not None and system_prompt_file is not None:
             raise ValueError("Pass either system_prompt or system_prompt_file, not both.")
@@ -194,11 +194,11 @@ class CodexWrapper:
                 f"skills.include_instructions={include_skills}",
                 "--json",
                 "--ephemeral",
-                "--sandbox",
-                sandbox,
             ])
             if approve_for_me:
                 command.append("--approve-for-me")
+            else:
+                command.extend(("--sandbox", sandbox))
             command.extend(("--skip-git-repo-check", prompt))
             try:
                 completed = subprocess.run(
